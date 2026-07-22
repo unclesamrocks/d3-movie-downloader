@@ -185,4 +185,78 @@ export class TelegramAdapter implements MessengerAdapter {
       }
     }
   }
+
+  /**
+   * Start polling for updates (for local development)
+   */
+  startPolling(onMessage: (message: IncomingMessage) => Promise<void>): void {
+    console.log('🔄 Starting Telegram polling...');
+    this.pollUpdates(0, onMessage);
+  }
+
+  /**
+   * Stop polling
+   */
+  stopPolling(): void {
+    this.polling = false;
+    console.log('🛑 Stopped Telegram polling');
+  }
+
+  private polling: boolean = false;
+
+  /**
+   * Poll for updates from Telegram
+   */
+  private async pollUpdates(offset: number, onMessage: (message: IncomingMessage) => Promise<void>): Promise<void> {
+    if (this.polling) return;
+    this.polling = true;
+
+    while (this.polling) {
+      try {
+        const updates = await this.getUpdates(offset);
+
+        for (const update of updates) {
+          if (update.message) {
+            const msg = update.message;
+            const userId = msg.from?.id ?? msg.chat.id;
+            const text = msg.text ?? '';
+
+            if (text) {
+              const message: IncomingMessage = {
+                messageId: String(msg.message_id),
+                userId: String(userId),
+                chatId: String(msg.chat.id),
+                text,
+                receivedAt: new Date(msg.date * 1000),
+              };
+
+              await onMessage(message);
+            }
+          }
+
+          // Update offset to acknowledge the update
+          offset = update.update_id + 1;
+        }
+      } catch (error) {
+        console.error('Polling error:', error);
+      }
+
+      // Wait before next poll
+      await new Promise(resolve => setTimeout(resolve, 1000));
+    }
+  }
+
+  /**
+   * Get updates from Telegram API
+   */
+  private async getUpdates(offset: number): Promise<TelegramUpdate[]> {
+    const params: Record<string, unknown> = {
+      offset,
+      limit: 100,
+      timeout: 0,
+    };
+
+    const result = await this.makeRequest('getUpdates', params);
+    return (result || []) as TelegramUpdate[];
+  }
 }

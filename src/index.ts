@@ -42,17 +42,26 @@ class Application {
     );
     console.log('✅ Command handler initialized');
 
-    // Set up webhook if URL is configured (skip in development without real token)
-    if (botConfig.telegram.webhookUrl && botConfig.env === 'production') {
+    // Set up webhook or polling based on environment
+    if (botConfig.env === 'production' && botConfig.telegram.webhookUrl) {
+      // Production mode: use webhooks
       await this.messenger.setWebhook(botConfig.telegram.webhookUrl);
       console.log(`✅ Webhook set to: ${botConfig.telegram.webhookUrl}`);
+      this.startServer();
+      console.log(`✅ Server running on port ${botConfig.server.port}`);
+    } else {
+      // Development mode: use polling
+      console.log('🔄 Development mode: using polling');
+      this.messenger.startPolling(async (message) => {
+        await this.commandHandler!.handleMessage(message);
+      });
     }
 
-    // Start HTTP server for webhooks
-    this.startServer();
-
-    console.log(`✅ Server running on port ${botConfig.server.port}`);
     console.log('🎬 D3 Movie Downloader Bot is ready!');
+
+    // Handle graceful shutdown
+    process.on('SIGTERM', () => this.shutdown());
+    process.on('SIGINT', () => this.shutdown());
   }
 
   private startServer(): void {
@@ -63,10 +72,6 @@ class Application {
     this.server.listen(botConfig.server.port, () => {
       console.log(`🌐 Webhook server listening on port ${botConfig.server.port}`);
     });
-
-    // Handle graceful shutdown
-    process.on('SIGTERM', () => this.shutdown());
-    process.on('SIGINT', () => this.shutdown());
   }
 
   private async handleRequest(req: IncomingMessage, res: ServerResponse): Promise<void> {
@@ -138,6 +143,10 @@ class Application {
       this.server.close(() => {
         console.log('🌐 HTTP server closed');
       });
+    }
+
+    if (this.messenger) {
+      this.messenger.stopPolling();
     }
 
     if (this.db) {
