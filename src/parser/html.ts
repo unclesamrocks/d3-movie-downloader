@@ -9,6 +9,10 @@
 export interface VideoExtractionResult {
   /** The video URL found in the page */
   videoUrl: string;
+  /** Video width in pixels (if available in metadata) */
+  width?: number;
+  /** Video height in pixels (if available in metadata) */
+  height?: number;
 }
 
 /**
@@ -59,17 +63,27 @@ export function extractVideoUrl(html: string): VideoExtractionResult | null {
     const jsonData = JSON.parse(jsonString);
 
     // Navigate to post.data.media.url
-    const mediaUrl = jsonData?.post?.data?.media?.url;
+    const media = jsonData?.post?.data?.media;
+    const mediaUrl = media?.url;
 
     if (mediaUrl && isValidVideoUrl(mediaUrl)) {
-      return { videoUrl: mediaUrl };
+      return {
+        videoUrl: mediaUrl,
+        width: media?.width,
+        height: media?.height,
+      };
     }
 
     // Also try post.data.link.url (for video links)
-    const linkUrl = jsonData?.post?.data?.link?.url;
+    const link = jsonData?.post?.data?.link;
+    const linkUrl = link?.url;
 
     if (linkUrl && isValidVideoUrl(linkUrl)) {
-      return { videoUrl: linkUrl };
+      return {
+        videoUrl: linkUrl,
+        width: link?.width,
+        height: link?.height,
+      };
     }
 
     return null;
@@ -106,9 +120,9 @@ export function resolveUrl(baseUrl: string, videoUrl: string): string {
  * Extract the first video URL from HTML, resolving relative URLs
  * @param html The HTML content
  * @param baseUrl The base URL for resolving relative paths
- * @returns The resolved video URL or null
+ * @returns The resolved video extraction result or null
  */
-export function findVideoUrl(html: string, baseUrl: string): string | null {
+export function findVideoUrl(html: string, baseUrl: string): VideoExtractionResult | null {
   const result = extractVideoUrl(html);
 
   if (!result) {
@@ -123,5 +137,9 @@ export function findVideoUrl(html: string, baseUrl: string): string | null {
     return null;
   }
 
-  return resolvedUrl;
+  return {
+    videoUrl: resolvedUrl,
+    width: result.width,
+    height: result.height,
+  };
 }

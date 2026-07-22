@@ -46,8 +46,10 @@ export interface MessengerAdapter {
    * @param userId User identifier
    * @param filePath Path to the file to send
    * @param caption Optional caption for the file
+   * @param width Optional video width (for video files)
+   * @param height Optional video height (for video files)
    */
-  sendFile(userId: string, filePath: string, caption?: string): Promise<void>;
+  sendFile(userId: string, filePath: string, caption?: string, width?: number, height?: number): Promise<void>;
 
   /**
    * Set or update the webhook for this messenger

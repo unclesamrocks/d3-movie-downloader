@@ -101,7 +101,7 @@ export class TelegramAdapter implements MessengerAdapter {
   /**
    * Send a video via Telegram Bot API (as video message, playable in chat)
    */
-  async sendFile(userId: string, filePath: string, caption?: string): Promise<void> {
+  async sendFile(userId: string, filePath: string, caption?: string, width?: number, height?: number): Promise<void> {
     // Telegram requires multipart/form-data for file uploads
     // Using fetch with FormData
     const formData = new FormData();
@@ -113,6 +113,14 @@ export class TelegramAdapter implements MessengerAdapter {
 
     // Append file as video (not document) for inline playback
     formData.append('video', blob, filename);
+
+    // Provide explicit dimensions from metadata to help Telegram render correctly
+    if (width) {
+      formData.append('width', String(width));
+    }
+    if (height) {
+      formData.append('height', String(height));
+    }
 
     if (caption) {
       formData.append('caption', caption);

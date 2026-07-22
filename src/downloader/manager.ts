@@ -4,7 +4,7 @@ import { mkdir, rm, statfs } from 'node:fs/promises';
 import { join } from 'node:path';
 import { botConfig } from '../config/index.js';
 import { MessengerAdapter } from '../messengers/types.js';
-import { findVideoUrl } from '../parser/html.js';
+import { findVideoUrl, VideoExtractionResult } from '../parser/html.js';
 
 /**
  * Status of a download task
@@ -23,6 +23,8 @@ export interface DownloadTask {
   fileSize?: number;
   downloadedBytes?: number;
   filePath?: string;
+  width?: number;
+  height?: number;
   createdAt: Date;
   startedAt?: Date;
   completedAt?: Date;
@@ -163,13 +165,16 @@ export class DownloadManager extends EventEmitter {
       task.status = 'downloading';
       this.emit('statusChange', task);
 
-      const videoUrl = await this.extractVideoUrl(task.url);
-      if (!videoUrl) {
+      const extractionResult = await this.extractVideoUrl(task.url);
+      if (!extractionResult) {
         throw new Error('Could not find video URL in page');
       }
 
+      task.width = extractionResult.width;
+      task.height = extractionResult.height;
+
       // Step 2: Check disk space
-      const fileSize = await this.getFileSize(videoUrl);
+      const fileSize = await this.getFileSize(extractionResult.videoUrl);
       const hasSpace = await this.checkDiskSpace(fileSize);
       if (!hasSpace) {
         await this.messenger.sendText(task.userId, '❌ Недостаточно места на диске для загрузки этого файла.');
@@ -188,13 +193,13 @@ export class DownloadManager extends EventEmitter {
       const filePath = join(tempDir, fileName);
       task.filePath = filePath;
 
-      await this.downloadVideo(videoUrl, filePath, task);
+      await this.downloadVideo(extractionResult.videoUrl, filePath, task);
 
       // Step 4: Send file to user
       task.status = 'sending';
       this.emit('statusChange', task);
 
-      await this.messenger.sendFile(task.userId, filePath, '🎬 Ваше видео готово!');
+      await this.messenger.sendFile(task.userId, filePath, '🎬 Ваше видео готово!', task.width, task.height);
 
       // Step 5: Clean up
       await rm(filePath, { force: true });
@@ -237,7 +242,7 @@ export class DownloadManager extends EventEmitter {
   /**
    * Extract video URL from a webpage
    */
-  private async extractVideoUrl(pageUrl: string): Promise<string | null> {
+  private async extractVideoUrl(pageUrl: string): Promise<VideoExtractionResult | null> {
     const response = await fetch(pageUrl, {
       headers: {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
