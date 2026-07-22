@@ -62,6 +62,20 @@ export class CommandHandler {
     const { userId, text } = message;
     const command = text.split(' ')[0].toLowerCase();
 
+    // Admin commands (require admin privileges)
+    const adminCommands = ['/adduser', '/removeuser', '/adddomain', '/removedomain', '/listdomains'];
+    const isAdmin = this.db.isAdminWhitelisted(Number(userId));
+
+    if (adminCommands.includes(command)) {
+      if (!isAdmin) {
+        await this.messenger.sendText(userId, '❌ У вас нет прав для выполнения этой команды.');
+        return;
+      }
+      await this.handleAdminCommand(message, command);
+      return;
+    }
+
+    // Regular commands
     switch (command) {
       case '/start':
       case '/help':
@@ -85,10 +99,94 @@ export class CommandHandler {
   }
 
   /**
+   * Handle admin commands
+   */
+  private async handleAdminCommand(message: IncomingMessage, command: string): Promise<void> {
+    const { userId, text } = message;
+    const args = text.split(' ').slice(1);
+
+    switch (command) {
+      case '/adduser':
+        await this.handleAddUser(userId, args);
+        break;
+      case '/removeuser':
+        await this.handleRemoveUser(userId, args);
+        break;
+      case '/adddomain':
+        await this.handleAddDomain(userId, args);
+        break;
+      case '/removedomain':
+        await this.handleRemoveDomain(userId, args);
+        break;
+      case '/listdomains':
+        await this.handleListDomains(userId);
+        break;
+    }
+  }
+
+  private async handleAddUser(userId: string, args: string[]): Promise<void> {
+    if (args.length < 1) {
+      await this.messenger.sendText(userId, '❌ Использование: /adduser &lt;telegram_user_id&gt;');
+      return;
+    }
+    const targetId = Number(args[0]);
+    if (isNaN(targetId)) {
+      await this.messenger.sendText(userId, '❌ Неверный ID пользователя');
+      return;
+    }
+    this.db.addUserToWhitelist(targetId);
+    await this.messenger.sendText(userId, `✅ Пользователь ${targetId} добавлен в whitelist`);
+  }
+
+  private async handleRemoveUser(userId: string, args: string[]): Promise<void> {
+    if (args.length < 1) {
+      await this.messenger.sendText(userId, '❌ Использование: /removeuser &lt;telegram_user_id&gt;');
+      return;
+    }
+    const targetId = Number(args[0]);
+    if (isNaN(targetId)) {
+      await this.messenger.sendText(userId, '❌ Неверный ID пользователя');
+      return;
+    }
+    this.db.removeUserFromWhitelist(targetId);
+    await this.messenger.sendText(userId, `✅ Пользователь ${targetId} удалён из whitelist`);
+  }
+
+  private async handleAddDomain(userId: string, args: string[]): Promise<void> {
+    if (args.length < 1) {
+      await this.messenger.sendText(userId, '❌ Использование: /adddomain &lt;domain&gt;');
+      return;
+    }
+    this.db.addDomainToWhitelist(args[0]);
+    await this.messenger.sendText(userId, `✅ Домен ${args[0]} добавлен в whitelist`);
+  }
+
+  private async handleRemoveDomain(userId: string, args: string[]): Promise<void> {
+    if (args.length < 1) {
+      await this.messenger.sendText(userId, '❌ Использование: /removedomain &lt;domain&gt;');
+      return;
+    }
+    this.db.removeDomainFromWhitelist(args[0]);
+    await this.messenger.sendText(userId, `✅ Домен ${args[0]} удалён из whitelist`);
+  }
+
+  private async handleListDomains(userId: string): Promise<void> {
+    const domains = this.db.getAllWhitelistedDomains();
+    if (domains.length === 0) {
+      await this.messenger.sendText(userId, '📋 В whitelist нет доменов.');
+      return;
+    }
+    const domainList = domains.map(d => `• ${d.domain}`).join('\n');
+    await this.messenger.sendText(userId, `📋 Домены в whitelist:\n\n${domainList}`);
+  }
+
+  /**
    * Handle /help command
    */
   private async handleHelp(userId: string): Promise<void> {
-    const helpText = `
+    const isAdmin = this.db.isAdminWhitelisted(Number(userId));
+
+    let helpText = `
 🎬 <b>D3 Movie Downloader Bot</b>
 
 Доступные команды:
@@ -100,6 +198,20 @@ export class CommandHandler {
 Поддерживаемые домены:
 ${this.getDomainList()}
     `.trim();
+
+    if (isAdmin) {
+      helpText += `
+
+<b>👮 Админ команды:</b>
+/adduser &lt;id&gt; - Добавить пользователя в whitelist
+/removeuser &lt;id&gt; - Удалить пользователя из whitelist
+/adddomain &lt;domain&gt; - Добавить домен
+/removedomain &lt;domain&gt; - Удалить домен
+/listdomains - Показать все домены в whitelist
+`;
+    }
+
+    helpText = helpText.trim();
 
     await this.messenger.sendText(userId, helpText);
   }
