@@ -1,5 +1,5 @@
 /**
- * HTML parser for extracting video URLs from web pages
+ * HTML parser for extracting video URLs from d3.ru pages
  * Uses native Node.js capabilities (no external libraries)
  */
 
@@ -9,96 +9,79 @@
 export interface VideoExtractionResult {
   /** The video URL found in the page */
   videoUrl: string;
-  /** The source element attributes (if any) */
-  sourceAttributes?: Record<string, string>;
-  /** The video element attributes (if any) */
-  videoAttributes?: Record<string, string>;
 }
 
 /**
- * Extract video URL from HTML content
- * Looks for <video> elements and their nested <source> elements
- * Only returns .mp4 URLs
+ * Extract video URL from d3.ru HTML content
+ * d3.ru stores page data in: window.entryStorages[window.pageName] = { ...json... }
+ * Video URL is located at: post.data.media.url
  */
 export function extractVideoUrl(html: string): VideoExtractionResult | null {
-  // First, try to find <source> elements inside <video> elements
-  const sourceMatch = html.match(/<video[^>]*>[\s\S]*?<source[^>]+src=["']([^"']+)["'][^>]*>[\s\S]*?<\/video>/i);
+  try {
+    // Find the start of JSON data after window.entryStorages[window.pageName] =
+    const marker = 'window.entryStorages[window.pageName] = ';
+    const startIndex = html.indexOf(marker);
 
-  if (sourceMatch && sourceMatch[1]) {
-    const url = sourceMatch[1];
-    if (isValidVideoUrl(url)) {
-      return {
-        videoUrl: url,
-        sourceAttributes: extractAttributes(sourceMatch[0]),
-        videoAttributes: extractAttributes(sourceMatch[0].match(/<video[^>]*>/)?.[0] || ''),
-      };
+    if (startIndex === -1) {
+      return null;
     }
-  }
 
-  // Try to find <video> elements with src attribute directly
-  const videoSrcMatch = html.match(/<video[^>]+src=["']([^"']+)["'][^>]*>/i);
+    // Find the JSON object starting from the marker
+    const jsonStart = startIndex + marker.length;
 
-  if (videoSrcMatch && videoSrcMatch[1]) {
-    const url = videoSrcMatch[1];
-    if (isValidVideoUrl(url)) {
-      return {
-        videoUrl: url,
-        videoAttributes: extractAttributes(videoSrcMatch[0]),
-      };
+    // Find the end of JSON (look for ; at the end of the line or end of script)
+    // We need to find the matching closing brace by counting braces
+    let braceCount = 0;
+    let jsonEnd = jsonStart;
+    let foundStart = false;
+
+    for (let i = jsonStart; i < html.length; i++) {
+      const char = html[i];
+
+      if (char === '{') {
+        braceCount++;
+        foundStart = true;
+      } else if (char === '}') {
+        braceCount--;
+      }
+
+      if (foundStart && braceCount === 0) {
+        jsonEnd = i + 1;
+        break;
+      }
     }
+
+    if (!foundStart || braceCount !== 0) {
+      return null;
+    }
+
+    const jsonString = html.substring(jsonStart, jsonEnd);
+    const jsonData = JSON.parse(jsonString);
+
+    // Navigate to post.data.media.url
+    const mediaUrl = jsonData?.post?.data?.media?.url;
+
+    if (mediaUrl && isValidVideoUrl(mediaUrl)) {
+      return { videoUrl: mediaUrl };
+    }
+
+    return null;
+  } catch {
+    return null;
   }
-
-  // Try to find any <source> element with mp4
-  const anySourceMatch = html.match(/<source[^>]+src=["']([^"']+\.mp4[^"']*)["'][^>]*>/i);
-
-  if (anySourceMatch && anySourceMatch[1]) {
-    return {
-      videoUrl: anySourceMatch[1],
-      sourceAttributes: extractAttributes(anySourceMatch[0]),
-    };
-  }
-
-  // Try to find any video URL ending in .mp4
-  const mp4Match = html.match(/["']([^"']+\.mp4[^"']*)["']/i);
-
-  if (mp4Match && mp4Match[1]) {
-    return {
-      videoUrl: mp4Match[1],
-    };
-  }
-
-  return null;
 }
 
 /**
  * Check if a URL is a valid video URL (must end with .mp4)
  */
 export function isValidVideoUrl(url: string): boolean {
-  // Must be a valid URL or path
   try {
-    // Handle relative URLs by checking extension
     const urlObj = new URL(url, 'https://placeholder.com');
     const pathname = urlObj.pathname.toLowerCase();
     return pathname.endsWith('.mp4');
   } catch {
-    // If URL parsing fails, check if it ends with .mp4
     return url.toLowerCase().endsWith('.mp4');
   }
-}
-
-/**
- * Extract attributes from an HTML tag
- */
-function extractAttributes(tag: string): Record<string, string> {
-  const attributes: Record<string, string> = {};
-  const attrRegex = /(\w+)=["']([^"']*)["']/g;
-  let match;
-
-  while ((match = attrRegex.exec(tag)) !== null) {
-    attributes[match[1]] = match[2];
-  }
-
-  return attributes;
 }
 
 /**
