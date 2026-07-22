@@ -64,6 +64,15 @@ export class Bot {
     // Handle graceful shutdown
     process.on('SIGTERM', () => this.shutdown());
     process.on('SIGINT', () => this.shutdown());
+
+    // Global error handlers
+    process.on('uncaughtException', (error) => {
+      console.error('❌ Uncaught Exception:', error);
+    });
+
+    process.on('unhandledRejection', (reason, promise) => {
+      console.error('❌ Unhandled Rejection at:', promise, 'reason:', reason);
+    });
   }
 
   async shutdown(): Promise<void> {
