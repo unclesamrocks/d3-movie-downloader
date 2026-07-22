@@ -42,8 +42,8 @@ class Application {
     );
     console.log('✅ Command handler initialized');
 
-    // Set up webhook if URL is configured
-    if (botConfig.telegram.webhookUrl) {
+    // Set up webhook if URL is configured (skip in development without real token)
+    if (botConfig.telegram.webhookUrl && botConfig.env === 'production') {
       await this.messenger.setWebhook(botConfig.telegram.webhookUrl);
       console.log(`✅ Webhook set to: ${botConfig.telegram.webhookUrl}`);
     }
