@@ -1,0 +1,20 @@
+version: '3.8'
+
+services:
+  bot:
+    build: .
+    container_name: d3-movie-downloader
+    restart: unless-stopped
+    environment:
+      - TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN}
+      - TELEGRAM_WEBHOOK_URL=${TELEGRAM_WEBHOOK_URL}
+      - DB_PATH=${DB_PATH:-/app/data/bot.db}
+      - TEMP_DIR=${TEMP_DIR:-/app/temp}
+      - MAX_CONCURRENT_DOWNLOADS=${MAX_CONCURRENT_DOWNLOADS:-1}
+      - MAX_DISK_USAGE_MB=${MAX_DISK_USAGE_MB:-1024}
+      - NODE_ENV=production
+    volumes:
+      - ./data:/app/data
+      - ./temp:/app/temp
+    ports:
+      - "${PORT:-3000}:3000"
