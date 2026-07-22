@@ -4,7 +4,7 @@ import { getDatabase } from './db/index.js';
 import { TelegramAdapter } from './messengers/telegram.js';
 import { CommandHandler } from './handlers/commands.js';
 import { DownloadManager } from './downloader/manager.js';
-import { mkdir } from 'node:fs/promises';
+import { mkdir, readdir, rm } from 'node:fs/promises';
 
 /**
  * Main application entry point
@@ -19,8 +19,9 @@ class Application {
   async start(): Promise<void> {
     console.log('🚀 Starting D3 Movie Downloader Bot...');
 
-    // Ensure temp directory exists
+    // Ensure temp directory exists and clean up old files
     await mkdir(botConfig.tempDir, { recursive: true });
+    await this.cleanupTempDir();
 
     // Initialize database
     this.db = await getDatabase();
@@ -134,6 +135,28 @@ class Application {
 
       req.on('error', reject);
     });
+  }
+
+  /**
+   * Clean up temp directory on startup
+   */
+  private async cleanupTempDir(): Promise<void> {
+    try {
+      const files = await readdir(botConfig.tempDir);
+      let cleanedCount = 0;
+
+      for (const file of files) {
+        const filePath = `${botConfig.tempDir}/${file}`;
+        await rm(filePath, { force: true });
+        cleanedCount++;
+      }
+
+      if (cleanedCount > 0) {
+        console.log(`🧹 Cleaned up ${cleanedCount} files from temp directory`);
+      }
+    } catch (error) {
+      console.error('Failed to clean temp directory:', error);
+    }
   }
 
   private async shutdown(): Promise<void> {

@@ -15,7 +15,6 @@ export interface BotConfig {
   tempDir: string;
   limits: {
     maxConcurrentDownloads: number;
-    maxDiskUsageMB: number;
   };
   server: {
     port: number;
@@ -52,7 +51,6 @@ export const botConfig: BotConfig = {
   tempDir: getEnv('TEMP_DIR', './temp'),
   limits: {
     maxConcurrentDownloads: getEnvNumber('MAX_CONCURRENT_DOWNLOADS', 1),
-    maxDiskUsageMB: getEnvNumber('MAX_DISK_USAGE_MB', 1024),
   },
   server: {
     port: getEnvNumber('PORT', 3000),
@@ -66,9 +64,6 @@ export function validateConfig(): void {
   }
   if (botConfig.limits.maxConcurrentDownloads < 1) {
     throw new Error('MAX_CONCURRENT_DOWNLOADS must be at least 1');
-  }
-  if (botConfig.limits.maxDiskUsageMB < 1) {
-    throw new Error('MAX_DISK_USAGE_MB must be at least 1');
   }
 }
 
