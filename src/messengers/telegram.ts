@@ -1,5 +1,7 @@
 import { MessengerAdapter, IncomingMessage, OutgoingMessage } from './types.js';
 import { botConfig } from '../config/index.js';
+import { openAsBlob } from 'node:fs';
+import { basename } from 'node:path';
 
 /**
  * Telegram Bot API response types
@@ -97,7 +99,7 @@ export class TelegramAdapter implements MessengerAdapter {
   }
 
   /**
-   * Send a file via Telegram Bot API
+   * Send a video via Telegram Bot API (as video message, playable in chat)
    */
   async sendFile(userId: string, filePath: string, caption?: string): Promise<void> {
     // Telegram requires multipart/form-data for file uploads
@@ -105,17 +107,19 @@ export class TelegramAdapter implements MessengerAdapter {
     const formData = new FormData();
     formData.append('chat_id', userId);
 
-    // Read file as stream
-    const fs = await import('node:fs');
-    const fileStream = fs.createReadStream(filePath);
-    formData.append('document', fileStream);
+    // Read file as blob with proper filename
+    const filename = basename(filePath);
+    const blob = await openAsBlob(filePath);
+
+    // Append file as video (not document) for inline playback
+    formData.append('video', blob, filename);
 
     if (caption) {
       formData.append('caption', caption);
       formData.append('parse_mode', 'HTML');
     }
 
-    const response = await fetch(`${this.apiUrl}/sendDocument`, {
+    const response = await fetch(`${this.apiUrl}/sendVideo`, {
       method: 'POST',
       body: formData,
     });
