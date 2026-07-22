@@ -1,4 +1,5 @@
 import { EventEmitter } from 'node:events';
+import { createWriteStream } from 'node:fs';
 import { mkdir, rm, statfs } from 'node:fs/promises';
 import { join } from 'node:path';
 import { botConfig } from '../config/index.js';
@@ -299,8 +300,7 @@ export class DownloadManager extends EventEmitter {
     const contentLength = response.headers.get('content-length');
     const totalSize = contentLength ? Number(contentLength) : 0;
 
-    const fs = await import('node:fs');
-    const fileStream = fs.createWriteStream(filePath);
+    const fileStream = createWriteStream(filePath);
 
     let downloadedBytes = 0;
     const reader = response.body?.getReader();
