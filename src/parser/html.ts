@@ -19,7 +19,7 @@ export interface VideoExtractionResult {
 export function extractVideoUrl(html: string): VideoExtractionResult | null {
   try {
     // Find the start of JSON data after window.entryStorages[window.pageName] =
-    const marker = 'window.entryStorages[window.pageName] = ';
+    const marker = "window.entryStorages[window.pageName] = ";
     const startIndex = html.indexOf(marker);
 
     if (startIndex === -1) {
@@ -38,10 +38,10 @@ export function extractVideoUrl(html: string): VideoExtractionResult | null {
     for (let i = jsonStart; i < html.length; i++) {
       const char = html[i];
 
-      if (char === '{') {
+      if (char === "{") {
         braceCount++;
         foundStart = true;
-      } else if (char === '}') {
+      } else if (char === "}") {
         braceCount--;
       }
 
@@ -65,6 +65,13 @@ export function extractVideoUrl(html: string): VideoExtractionResult | null {
       return { videoUrl: mediaUrl };
     }
 
+    // Also try post.data.link.url (for video links)
+    const linkUrl = jsonData?.post?.data?.link?.url;
+
+    if (linkUrl && isValidVideoUrl(linkUrl)) {
+      return { videoUrl: linkUrl };
+    }
+
     return null;
   } catch {
     return null;
@@ -76,11 +83,11 @@ export function extractVideoUrl(html: string): VideoExtractionResult | null {
  */
 export function isValidVideoUrl(url: string): boolean {
   try {
-    const urlObj = new URL(url, 'https://placeholder.com');
+    const urlObj = new URL(url, "https://placeholder.com");
     const pathname = urlObj.pathname.toLowerCase();
-    return pathname.endsWith('.mp4');
+    return pathname.endsWith(".mp4");
   } catch {
-    return url.toLowerCase().endsWith('.mp4');
+    return url.toLowerCase().endsWith(".mp4");
   }
 }
 
