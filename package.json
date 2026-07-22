@@ -1,0 +1,16 @@
+{
+  "name": "d3-movie-downloader",
+  "version": "1.0.0",
+  "description": "Telegram bot for downloading videos from d3.ru",
+  "main": "dist/index.js",
+  "type": "module",
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "dev": "tsc && node dist/index.js",
+    "watch": "tsc --watch"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC"
+}
