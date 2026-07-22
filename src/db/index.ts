@@ -3,18 +3,6 @@ import { botConfig } from "../config/index.js";
 import { mkdir } from "node:fs/promises";
 import { dirname } from "node:path";
 
-export interface UserWhitelist {
-  id: number;
-  telegram_user_id: number;
-  created_at: string;
-}
-
-export interface AdminWhitelist {
-  id: number;
-  telegram_user_id: number;
-  created_at: string;
-}
-
 export interface DomainWhitelist {
   id: number;
   domain: string;
@@ -81,33 +69,12 @@ export class Database {
     stmt.run(telegramUserId);
   }
 
-  getAllWhitelistedUsers(): UserWhitelist[] {
-    const stmt = this.db.prepare(
-      "SELECT * FROM user_whitelist ORDER BY created_at DESC",
-    );
-    return stmt.all() as unknown as UserWhitelist[];
-  }
-
   // Admin whitelist methods
   isAdminWhitelisted(telegramUserId: number): boolean {
     const stmt = this.db.prepare(
       "SELECT 1 FROM admin_whitelist WHERE telegram_user_id = ?",
     );
     return !!stmt.get(telegramUserId);
-  }
-
-  addAdminToWhitelist(telegramUserId: number): void {
-    const stmt = this.db.prepare(
-      "INSERT OR IGNORE INTO admin_whitelist (telegram_user_id) VALUES (?)",
-    );
-    stmt.run(telegramUserId);
-  }
-
-  removeAdminFromWhitelist(telegramUserId: number): void {
-    const stmt = this.db.prepare(
-      "DELETE FROM admin_whitelist WHERE telegram_user_id = ?",
-    );
-    stmt.run(telegramUserId);
   }
 
   // Domain whitelist methods
