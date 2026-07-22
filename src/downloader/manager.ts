@@ -30,11 +30,12 @@ export interface DownloadTask {
 
 /**
  * Download Manager
- * Manages download queue with per-user limits
+ * Manages download queue with per-user limits and global concurrency control
  */
 export class DownloadManager extends EventEmitter {
   private tasks: Map<string, DownloadTask> = new Map();
   private userTasks: Map<string, string> = new Map(); // userId -> taskId
+  private queue: string[] = []; // Queue of task IDs waiting to be processed
   private messenger: MessengerAdapter;
   private maxConcurrent: number;
   private activeDownloads: number = 0;
@@ -74,10 +75,11 @@ export class DownloadManager extends EventEmitter {
     this.tasks.set(taskId, task);
     this.userTasks.set(userId, taskId);
 
-    // Start processing if we have capacity
-    if (this.activeDownloads < this.maxConcurrent) {
-      this.processTask(taskId).catch(console.error);
-    }
+    // Add to queue
+    this.queue.push(taskId);
+
+    // Try to start processing
+    this.processQueue();
 
     return task;
   }
@@ -114,9 +116,13 @@ export class DownloadManager extends EventEmitter {
       }
     }
 
-    // Remove from user tasks
+    // Remove from user tasks and queue
     this.userTasks.delete(userId);
     this.tasks.delete(taskId);
+    this.queue = this.queue.filter(id => id !== taskId);
+
+    // Try to process next in queue
+    this.processQueue();
 
     return true;
   }
@@ -129,6 +135,19 @@ export class DownloadManager extends EventEmitter {
   }
 
   /**
+   * Process the download queue
+   */
+  private processQueue(): void {
+    // Process tasks from queue while we have capacity
+    while (this.activeDownloads < this.maxConcurrent && this.queue.length > 0) {
+      const taskId = this.queue.shift();
+      if (taskId) {
+        this.processTask(taskId).catch(console.error);
+      }
+    }
+  }
+
+  /**
    * Process a download task
    */
   private async processTask(taskId: string): Promise<void> {
@@ -136,6 +155,7 @@ export class DownloadManager extends EventEmitter {
     if (!task) return;
 
     this.activeDownloads++;
+    task.startedAt = new Date();
 
     try {
       // Step 1: Fetch HTML and find video URL
@@ -207,6 +227,9 @@ export class DownloadManager extends EventEmitter {
       this.activeDownloads--;
       this.userTasks.delete(task.userId);
       this.tasks.delete(taskId);
+
+      // Process next task in queue
+      this.processQueue();
     }
   }
 
