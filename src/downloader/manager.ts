@@ -309,28 +309,32 @@ export class DownloadManager extends EventEmitter {
       throw new Error('Failed to get response body reader');
     }
 
-    while (true) {
-      const { done, value } = await reader.read();
+    try {
+      while (true) {
+        const { done, value } = await reader.read();
 
-      if (done) break;
+        if (done) break;
 
-      fileStream.write(value);
-      downloadedBytes += value.length;
+        fileStream.write(value);
+        downloadedBytes += value.length;
 
-      if (totalSize > 0) {
-        task.progress = Math.round((downloadedBytes / totalSize) * 100);
-        task.downloadedBytes = downloadedBytes;
-        this.emit('progress', task);
+        if (totalSize > 0) {
+          task.progress = Math.round((downloadedBytes / totalSize) * 100);
+          task.downloadedBytes = downloadedBytes;
+          this.emit('progress', task);
+        }
       }
+    } finally {
+      // Always close the stream and release the reader
+      fileStream.end();
+      reader.releaseLock();
+
+      // Wait for file to be fully written
+      await new Promise<void>((resolve, reject) => {
+        fileStream.on('finish', () => resolve());
+        fileStream.on('error', reject);
+      });
     }
-
-    fileStream.end();
-
-    // Wait for file to be fully written
-    await new Promise<void>((resolve, reject) => {
-      fileStream.on('finish', () => resolve());
-      fileStream.on('error', reject);
-    });
   }
 
   /**
