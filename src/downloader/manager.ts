@@ -1,4 +1,3 @@
-import { EventEmitter } from 'node:events';
 import { createWriteStream } from 'node:fs';
 import { mkdir, rm, statfs } from 'node:fs/promises';
 import { join } from 'node:path';
@@ -35,7 +34,7 @@ export interface DownloadTask {
  * Download Manager
  * Manages download queue with per-user limits and global concurrency control
  */
-export class DownloadManager extends EventEmitter {
+export class DownloadManager {
   private tasks: Map<string, DownloadTask> = new Map();
   private userTasks: Map<string, string> = new Map(); // userId -> taskId
   private queue: string[] = []; // Queue of task IDs waiting to be processed
@@ -44,7 +43,6 @@ export class DownloadManager extends EventEmitter {
   private activeDownloads: number = 0;
 
   constructor(messenger: MessengerAdapter) {
-    super();
     this.messenger = messenger;
     this.maxConcurrent = botConfig.limits.maxConcurrentDownloads;
   }
@@ -108,7 +106,6 @@ export class DownloadManager extends EventEmitter {
 
     // Mark as stopped
     task.status = 'stopped';
-    this.emit('statusChange', task);
 
     // Clean up file if it exists
     if (task.filePath) {
@@ -163,7 +160,6 @@ export class DownloadManager extends EventEmitter {
     try {
       // Step 1: Fetch HTML and find video URL
       task.status = 'downloading';
-      this.emit('statusChange', task);
 
       const extractionResult = await this.extractVideoUrl(task.url);
       if (!extractionResult) {
@@ -181,7 +177,6 @@ export class DownloadManager extends EventEmitter {
         task.status = 'failed';
         task.error = 'Insufficient disk space';
         task.completedAt = new Date();
-        this.emit('statusChange', task);
         return;
       }
 
@@ -197,7 +192,6 @@ export class DownloadManager extends EventEmitter {
 
       // Step 4: Send file to user
       task.status = 'sending';
-      this.emit('statusChange', task);
 
       await this.messenger.sendFile(task.userId, filePath, '🎬 Ваше видео готово!', task.width, task.height);
 
@@ -207,7 +201,6 @@ export class DownloadManager extends EventEmitter {
       task.status = 'completed';
       task.completedAt = new Date();
       task.progress = 100;
-      this.emit('statusChange', task);
 
       await this.messenger.sendText(task.userId, '✅ Видео успешно загружено и отправлено!');
 
@@ -226,7 +219,6 @@ export class DownloadManager extends EventEmitter {
       task.status = 'failed';
       task.error = error instanceof Error ? error.message : String(error);
       task.completedAt = new Date();
-      this.emit('statusChange', task);
 
       await this.messenger.sendText(task.userId, `❌ Ошибка загрузки: ${task.error}`);
     } finally {
@@ -326,7 +318,6 @@ export class DownloadManager extends EventEmitter {
         if (totalSize > 0) {
           task.progress = Math.round((downloadedBytes / totalSize) * 100);
           task.downloadedBytes = downloadedBytes;
-          this.emit('progress', task);
         }
       }
     } finally {
