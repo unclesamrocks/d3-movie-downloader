@@ -96,20 +96,34 @@ export class Server {
     return new Promise((resolve, reject) => {
       const chunks: Buffer[] = [];
 
-      req.on('data', (chunk: Buffer) => {
+      const onData = (chunk: Buffer) => {
         chunks.push(chunk);
-      });
+      };
 
-      req.on('end', () => {
+      const onEnd = () => {
+        cleanup();
         const body = Buffer.concat(chunks).toString('utf-8');
         try {
           resolve(JSON.parse(body));
         } catch {
           resolve(body);
         }
-      });
+      };
 
-      req.on('error', reject);
+      const onError = (err: Error) => {
+        cleanup();
+        reject(err);
+      };
+
+      const cleanup = () => {
+        req.removeListener('data', onData);
+        req.removeListener('end', onEnd);
+        req.removeListener('error', onError);
+      };
+
+      req.on('data', onData);
+      req.on('end', onEnd);
+      req.on('error', onError);
     });
   }
 }
