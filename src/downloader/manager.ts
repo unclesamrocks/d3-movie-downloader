@@ -327,8 +327,16 @@ export class DownloadManager {
 
       // Wait for file to be fully written
       await new Promise<void>((resolve, reject) => {
-        fileStream.on('finish', () => resolve());
-        fileStream.on('error', reject);
+        const onFinish = () => {
+          fileStream.removeListener('error', onError);
+          resolve();
+        };
+        const onError = (err: Error) => {
+          fileStream.removeListener('finish', onFinish);
+          reject(err);
+        };
+        fileStream.once('finish', onFinish);
+        fileStream.once('error', onError);
       });
     }
   }
