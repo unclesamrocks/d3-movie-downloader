@@ -303,6 +303,9 @@ export class DownloadManager {
     const reader = response.body?.getReader();
 
     if (!reader) {
+      // Clean up response body before throwing
+      response.body?.cancel();
+      fileStream.destroy();
       throw new Error('Failed to get response body reader');
     }
 
