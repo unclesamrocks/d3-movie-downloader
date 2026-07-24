@@ -1,5 +1,5 @@
 # Runtime stage - uses pre-built binary
-FROM golang:1.26-alpine
+FROM alpine:latest
 RUN apk add --no-cache ca-certificates
 WORKDIR /app
 COPY bin/d3-movie-downloader .

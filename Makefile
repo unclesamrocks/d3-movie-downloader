@@ -7,7 +7,7 @@ BINARY_PATH := $(BINARY_DIR)/$(BINARY_NAME)
 # Go build flags
 GOOS ?= $(shell go env GOOS)
 GOARCH ?= $(shell go env GOARCH)
-CGO_ENABLED ?= 1
+CGO_ENABLED ?= 0
 
 build:
 	@echo "🔨 Building $(BINARY_NAME)..."
