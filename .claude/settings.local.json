@@ -6,7 +6,10 @@
       "Bash(npx tsc *)",
       "Bash(go build *)",
       "Bash(go vet *)",
-      "Bash(go version *)"
+      "Bash(go version *)",
+      "Bash(make build *)",
+      "Bash(./bin/d3-movie-downloader --help)",
+      "Bash(pkill -f d3-movie-downloader)"
     ]
   }
 }
