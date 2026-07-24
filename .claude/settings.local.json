@@ -9,7 +9,9 @@
       "Bash(go version *)",
       "Bash(make build *)",
       "Bash(./bin/d3-movie-downloader --help)",
-      "Bash(pkill -f d3-movie-downloader)"
+      "Bash(pkill -f d3-movie-downloader)",
+      "Bash(go get *)",
+      "Bash(go mod *)"
     ]
   }
 }
