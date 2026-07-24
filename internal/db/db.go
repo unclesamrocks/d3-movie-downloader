@@ -107,6 +107,15 @@ func (d *Database) AddUserToWhitelist(telegramUserID int64) error {
 	return err
 }
 
+// AddUserToAdminWhitelist adds a user to the admin whitelist
+func (d *Database) AddUserToAdminWhitelist(telegramUserID int64) error {
+	_, err := d.db.Exec(
+		"INSERT OR IGNORE INTO admin_whitelist (telegram_user_id) VALUES (?)",
+		telegramUserID,
+	)
+	return err
+}
+
 // RemoveUserFromWhitelist removes a user from the whitelist
 func (d *Database) RemoveUserFromWhitelist(telegramUserID int64) error {
 	_, err := d.db.Exec(

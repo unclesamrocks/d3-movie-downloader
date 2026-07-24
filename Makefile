@@ -1,4 +1,4 @@
-.PHONY: build clean vet fmt
+.PHONY: build clean vet fmt adduser
 
 BINARY_NAME := d3-movie-downloader
 BINARY_DIR := bin
@@ -29,3 +29,6 @@ fmt:
 	@echo "🎨 Formatting Go code..."
 	@gofmt -s -w .
 	@echo "✅ Format done"
+
+adduser:
+	@go run ./cmd/adduser $(ARGS)
