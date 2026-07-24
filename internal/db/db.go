@@ -199,5 +199,8 @@ func (d *Database) GetAllWhitelistedDomains() []DomainWhitelist {
 		}
 		domains = append(domains, d)
 	}
+	if err := rows.Err(); err != nil {
+		return nil
+	}
 	return domains
 }
