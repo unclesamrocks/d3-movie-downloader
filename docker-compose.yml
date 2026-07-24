@@ -11,7 +11,6 @@ services:
       - DB_PATH=${DB_PATH:-/app/data/bot.db}
       - TEMP_DIR=${TEMP_DIR:-/app/temp}
       - MAX_CONCURRENT_DOWNLOADS=${MAX_CONCURRENT_DOWNLOADS:-1}
-      - MAX_DISK_USAGE_MB=${MAX_DISK_USAGE_MB:-1024}
       - NODE_ENV=production
       - PORT=3000
     volumes:

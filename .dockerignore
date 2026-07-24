@@ -3,3 +3,11 @@ dist
 .git
 *.log
 .env
+*.db
+*.db-shm
+*.db-wal
+temp
+src
+package.json
+package-lock.json
+tsconfig.json

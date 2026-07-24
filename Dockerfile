@@ -1,20 +1,16 @@
-FROM node:24-alpine AS builder
-
+# Builder stage
+FROM golang:1.23-alpine AS builder
 WORKDIR /app
+COPY go.mod go.sum ./
+RUN go mod download
+COPY . .
+RUN CGO_ENABLED=1 go build -o /d3-movie-downloader ./cmd/bot
 
-COPY package*.json ./
-RUN npm install
-
-COPY tsconfig.json ./
-COPY src ./src
-RUN npm run build
-
-FROM node:24-alpine AS runtime
-
+# Runtime stage
+FROM golang:1.23-alpine
+RUN apk add --no-cache ca-certificates
 WORKDIR /app
-
-COPY --from=builder /app/dist ./dist
-COPY package*.json ./
-RUN npm install --production
-
-CMD ["node", "dist/index.js"]
+COPY --from=builder /d3-movie-downloader .
+COPY .env.example ./.env.example
+EXPOSE 3000
+CMD ["./d3-movie-downloader"]
