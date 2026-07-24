@@ -13,6 +13,36 @@ type VideoExtractionResult struct {
 	Height   int
 }
 
+// d3Media represents the media object in d3.ru JSON
+type d3Media struct {
+	URL    string `json:"url"`
+	Width  int    `json:"width"`
+	Height int    `json:"height"`
+}
+
+// d3Link represents the link object in d3.ru JSON
+type d3Link struct {
+	URL    string `json:"url"`
+	Width  int    `json:"width"`
+	Height int    `json:"height"`
+}
+
+// d3PostData represents the data object inside a post
+type d3PostData struct {
+	Media *d3Media `json:"media"`
+	Link  *d3Link  `json:"link"`
+}
+
+// d3Post represents the post object in d3.ru JSON
+type d3Post struct {
+	Data d3PostData `json:"data"`
+}
+
+// d3PageData represents the top-level JSON structure from d3.ru
+type d3PageData struct {
+	Post d3Post `json:"post"`
+}
+
 // ExtractVideoUrl extracts video URL from d3.ru HTML content
 // d3.ru stores page data in: window.entryStorages[window.pageName] = { ...json... }
 // Video URL is located at: post.data.media.url
@@ -54,101 +84,30 @@ func ExtractVideoUrl(html string) (*VideoExtractionResult, error) {
 
 	jsonString := html[jsonStart:jsonEnd]
 
-	var jsonData map[string]interface{}
-	if err := json.Unmarshal([]byte(jsonString), &jsonData); err != nil {
+	var pageData d3PageData
+	if err := json.Unmarshal([]byte(jsonString), &pageData); err != nil {
 		return nil, nil
 	}
 
-	// Navigate to post.data.media.url
-	result := extractMediaUrl(jsonData)
-	if result != nil {
-		return result, nil
+	// Try post.data.media.url first
+	if media := pageData.Post.Data.Media; media != nil && IsValidVideoUrl(media.URL) {
+		return &VideoExtractionResult{
+			VideoURL: media.URL,
+			Width:    media.Width,
+			Height:   media.Height,
+		}, nil
 	}
 
 	// Also try post.data.link.url
-	result = extractLinkUrl(jsonData)
-	if result != nil {
-		return result, nil
+	if link := pageData.Post.Data.Link; link != nil && IsValidVideoUrl(link.URL) {
+		return &VideoExtractionResult{
+			VideoURL: link.URL,
+			Width:    link.Width,
+			Height:   link.Height,
+		}, nil
 	}
 
 	return nil, nil
-}
-
-func extractMediaUrl(data map[string]interface{}) *VideoExtractionResult {
-	post, ok := data["post"].(map[string]interface{})
-	if !ok {
-		return nil
-	}
-
-	postData, ok := post["data"].(map[string]interface{})
-	if !ok {
-		return nil
-	}
-
-	media, ok := postData["media"].(map[string]interface{})
-	if !ok {
-		return nil
-	}
-
-	mediaURL, ok := media["url"].(string)
-	if !ok || mediaURL == "" {
-		return nil
-	}
-
-	if !IsValidVideoUrl(mediaURL) {
-		return nil
-	}
-
-	return &VideoExtractionResult{
-		VideoURL: mediaURL,
-		Width:    getIntFromInterface(media["width"]),
-		Height:   getIntFromInterface(media["height"]),
-	}
-}
-
-func extractLinkUrl(data map[string]interface{}) *VideoExtractionResult {
-	post, ok := data["post"].(map[string]interface{})
-	if !ok {
-		return nil
-	}
-
-	postData, ok := post["data"].(map[string]interface{})
-	if !ok {
-		return nil
-	}
-
-	link, ok := postData["link"].(map[string]interface{})
-	if !ok {
-		return nil
-	}
-
-	linkURL, ok := link["url"].(string)
-	if !ok || linkURL == "" {
-		return nil
-	}
-
-	if !IsValidVideoUrl(linkURL) {
-		return nil
-	}
-
-	return &VideoExtractionResult{
-		VideoURL: linkURL,
-		Width:    getIntFromInterface(link["width"]),
-		Height:   getIntFromInterface(link["height"]),
-	}
-}
-
-func getIntFromInterface(v interface{}) int {
-	switch val := v.(type) {
-	case float64:
-		return int(val)
-	case int:
-		return val
-	case int64:
-		return int(val)
-	default:
-		return 0
-	}
 }
 
 // IsValidVideoUrl checks if a URL is a valid video URL (must end with .mp4)
