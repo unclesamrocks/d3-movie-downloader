@@ -133,7 +133,7 @@ func (t *TelegramAdapter) parseUpdates(updates []telegramUpdate) []IncomingMessa
 
 // SendText sends a text message via Telegram Bot API
 func (t *TelegramAdapter) SendText(userID string, text string) error {
-	err := t.makeRequest("sendMessage", map[string]interface{}{
+	err := t.makeRequest("sendMessage", map[string]any{
 		"chat_id":    userID,
 		"text":       text,
 		"parse_mode": "HTML",
@@ -227,7 +227,7 @@ func (t *TelegramAdapter) SendFile(userID string, filePath string, caption strin
 
 // SetWebhook sets the webhook URL
 func (t *TelegramAdapter) SetWebhook(url string) error {
-	return t.makeRequest("setWebhook", map[string]interface{}{
+	return t.makeRequest("setWebhook", map[string]any{
 		"url": url,
 	})
 }
@@ -309,7 +309,7 @@ func (t *TelegramAdapter) pollUpdates(ctx context.Context, onMessage func(Incomi
 
 // getUpdates fetches updates from Telegram API
 func (t *TelegramAdapter) getUpdates(offset int) ([]telegramUpdate, int, error) {
-	params := map[string]interface{}{
+	params := map[string]any{
 		"offset":  offset,
 		"limit":   100,
 		"timeout": 0,
@@ -336,13 +336,13 @@ func (t *TelegramAdapter) getUpdates(offset int) ([]telegramUpdate, int, error) 
 }
 
 // makeRequest makes a JSON request to the Telegram API
-func (t *TelegramAdapter) makeRequest(method string, params map[string]interface{}) error {
+func (t *TelegramAdapter) makeRequest(method string, params map[string]any) error {
 	_, err := t.makeRequestRaw(method, params)
 	return err
 }
 
 // makeRequestRaw makes a JSON request to the Telegram API and returns the result
-func (t *TelegramAdapter) makeRequestRaw(method string, params map[string]interface{}) (json.RawMessage, error) {
+func (t *TelegramAdapter) makeRequestRaw(method string, params map[string]any) (json.RawMessage, error) {
 	body, err := json.Marshal(params)
 	if err != nil {
 		return nil, fmt.Errorf("failed to marshal params: %w", err)

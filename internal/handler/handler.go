@@ -35,7 +35,7 @@ func (h *CommandHandler) HandleMessage(msg messenger.IncomingMessage) {
 	// Check if user is whitelisted
 	userIDInt, _ := strconv.ParseInt(msg.UserID, 10, 64)
 	if !h.db.IsUserWhitelisted(userIDInt) {
-		h.messenger.SendText(msg.UserID, h.localizer.Localize(msg.Language, "not_whitelisted", map[string]interface{}{"UserID": msg.UserID}))
+		h.messenger.SendText(msg.UserID, h.localizer.Localize(msg.Language, "not_whitelisted", map[string]any{"UserID": msg.UserID}))
 		return
 	}
 
@@ -129,11 +129,11 @@ func (h *CommandHandler) handleAddUser(msg messenger.IncomingMessage, args []str
 	}
 
 	if err := h.db.AddUserToWhitelist(targetID); err != nil {
-		h.messenger.SendText(msg.UserID, h.localizer.Localize(msg.Language, "error", map[string]interface{}{"Error": err.Error()}))
+		h.messenger.SendText(msg.UserID, h.localizer.Localize(msg.Language, "error", map[string]any{"Error": err.Error()}))
 		return
 	}
 
-	h.messenger.SendText(msg.UserID, h.localizer.Localize(msg.Language, "user_added", map[string]interface{}{"UserID": targetID}))
+	h.messenger.SendText(msg.UserID, h.localizer.Localize(msg.Language, "user_added", map[string]any{"UserID": targetID}))
 }
 
 func (h *CommandHandler) handleRemoveUser(msg messenger.IncomingMessage, args []string) {
@@ -149,11 +149,11 @@ func (h *CommandHandler) handleRemoveUser(msg messenger.IncomingMessage, args []
 	}
 
 	if err := h.db.RemoveUserFromWhitelist(targetID); err != nil {
-		h.messenger.SendText(msg.UserID, h.localizer.Localize(msg.Language, "error", map[string]interface{}{"Error": err.Error()}))
+		h.messenger.SendText(msg.UserID, h.localizer.Localize(msg.Language, "error", map[string]any{"Error": err.Error()}))
 		return
 	}
 
-	h.messenger.SendText(msg.UserID, h.localizer.Localize(msg.Language, "user_removed", map[string]interface{}{"UserID": targetID}))
+	h.messenger.SendText(msg.UserID, h.localizer.Localize(msg.Language, "user_removed", map[string]any{"UserID": targetID}))
 }
 
 func (h *CommandHandler) handleAddDomain(msg messenger.IncomingMessage, args []string) {
@@ -163,11 +163,11 @@ func (h *CommandHandler) handleAddDomain(msg messenger.IncomingMessage, args []s
 	}
 
 	if err := h.db.AddDomainToWhitelist(args[0]); err != nil {
-		h.messenger.SendText(msg.UserID, h.localizer.Localize(msg.Language, "error", map[string]interface{}{"Error": err.Error()}))
+		h.messenger.SendText(msg.UserID, h.localizer.Localize(msg.Language, "error", map[string]any{"Error": err.Error()}))
 		return
 	}
 
-	h.messenger.SendText(msg.UserID, h.localizer.Localize(msg.Language, "domain_added", map[string]interface{}{"Domain": args[0]}))
+	h.messenger.SendText(msg.UserID, h.localizer.Localize(msg.Language, "domain_added", map[string]any{"Domain": args[0]}))
 }
 
 func (h *CommandHandler) handleRemoveDomain(msg messenger.IncomingMessage, args []string) {
@@ -177,11 +177,11 @@ func (h *CommandHandler) handleRemoveDomain(msg messenger.IncomingMessage, args 
 	}
 
 	if err := h.db.RemoveDomainFromWhitelist(args[0]); err != nil {
-		h.messenger.SendText(msg.UserID, h.localizer.Localize(msg.Language, "error", map[string]interface{}{"Error": err.Error()}))
+		h.messenger.SendText(msg.UserID, h.localizer.Localize(msg.Language, "error", map[string]any{"Error": err.Error()}))
 		return
 	}
 
-	h.messenger.SendText(msg.UserID, h.localizer.Localize(msg.Language, "domain_removed", map[string]interface{}{"Domain": args[0]}))
+	h.messenger.SendText(msg.UserID, h.localizer.Localize(msg.Language, "domain_removed", map[string]any{"Domain": args[0]}))
 }
 
 func (h *CommandHandler) handleListDomains(msg messenger.IncomingMessage) {
@@ -196,7 +196,7 @@ func (h *CommandHandler) handleListDomains(msg messenger.IncomingMessage) {
 		domainList.WriteString(fmt.Sprintf("• %s\n", d.Domain))
 	}
 
-	h.messenger.SendText(msg.UserID, h.localizer.Localize(msg.Language, "domain_list", map[string]interface{}{"List": strings.TrimSpace(domainList.String())}))
+	h.messenger.SendText(msg.UserID, h.localizer.Localize(msg.Language, "domain_list", map[string]any{"List": strings.TrimSpace(domainList.String())}))
 }
 
 // handleHelp shows help text
@@ -243,7 +243,7 @@ func (h *CommandHandler) handleStop(msg messenger.IncomingMessage) {
 
 	stopped, err := h.downloadManager.StopTask(msg.UserID)
 	if err != nil {
-		h.messenger.SendText(msg.UserID, h.localizer.Localize(msg.Language, "stop_failed", map[string]interface{}{"Error": err.Error()}))
+		h.messenger.SendText(msg.UserID, h.localizer.Localize(msg.Language, "stop_failed", map[string]any{"Error": err.Error()}))
 		return
 	}
 
@@ -260,7 +260,7 @@ func (h *CommandHandler) handleUrl(msg messenger.IncomingMessage) {
 	existingTask := h.downloadManager.GetUserTask(msg.UserID)
 	if existingTask != nil {
 		statusText := h.formatTaskStatus(existingTask, msg.Language)
-		h.messenger.SendText(msg.UserID, h.localizer.Localize(msg.Language, "active_download_exists", map[string]interface{}{"Status": statusText}))
+		h.messenger.SendText(msg.UserID, h.localizer.Localize(msg.Language, "active_download_exists", map[string]any{"Status": statusText}))
 		return
 	}
 
@@ -277,7 +277,7 @@ func (h *CommandHandler) handleUrl(msg messenger.IncomingMessage) {
 		return
 	}
 
-	h.messenger.SendText(msg.UserID, h.localizer.Localize(msg.Language, "starting_download", map[string]interface{}{"URL": msg.Text, "Status": h.formatTaskStatus(task, msg.Language)}))
+	h.messenger.SendText(msg.UserID, h.localizer.Localize(msg.Language, "starting_download", map[string]any{"URL": msg.Text, "Status": h.formatTaskStatus(task, msg.Language)}))
 }
 
 // isValidUrl checks if text is a valid URL with a scheme and host
@@ -337,16 +337,18 @@ func (h *CommandHandler) formatTaskStatus(task *downloader.DownloadTask, lang st
 	var message strings.Builder
 	message.WriteString(fmt.Sprintf("%s <b>%s</b>\n", emoji, statusName))
 	message.WriteString(fmt.Sprintf("🔗 URL: %s\n", task.URL))
-	message.WriteString(h.localizer.Localize(lang, "progress", map[string]interface{}{"Progress": task.Progress}))
+	message.WriteString(h.localizer.Localize(lang, "progress", map[string]any{"Progress": task.Progress}))
 
 	if task.FileSize > 0 && task.DownloadedBytes > 0 {
 		downloadedMB := float64(task.DownloadedBytes) / (1024 * 1024)
 		totalMB := float64(task.FileSize) / (1024 * 1024)
-		message.WriteString("\n" + h.localizer.Localize(lang, "downloaded", map[string]interface{}{"Downloaded": fmt.Sprintf("%.2f", downloadedMB), "Total": fmt.Sprintf("%.2f", totalMB)}))
+		message.WriteString("\n")
+		message.WriteString(h.localizer.Localize(lang, "downloaded", map[string]any{"Downloaded": fmt.Sprintf("%.2f", downloadedMB), "Total": fmt.Sprintf("%.2f", totalMB)}))
 	}
 
 	if task.Error != "" {
-		message.WriteString("\n" + h.localizer.Localize(lang, "error", map[string]interface{}{"Error": task.Error}))
+		message.WriteString("\n")
+		message.WriteString(h.localizer.Localize(lang, "error", map[string]any{"Error": task.Error}))
 	}
 
 	return message.String()

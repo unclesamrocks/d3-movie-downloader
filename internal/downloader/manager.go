@@ -352,7 +352,7 @@ func (dm *DownloadManager) handleTaskError(task *DownloadTask, err error) {
 	dm.mu.Unlock()
 
 	fmt.Printf("Download error: %v\n", err)
-	dm.messenger.SendText(task.UserID, dm.localizer.Localize(task.Language, "download_error", map[string]interface{}{"Error": err.Error()}))
+	dm.messenger.SendText(task.UserID, dm.localizer.Localize(task.Language, "download_error", map[string]any{"Error": err.Error()}))
 }
 
 // extractVideoUrl fetches HTML and extracts video URL

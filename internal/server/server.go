@@ -62,7 +62,7 @@ func (s *Server) handleHealth(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 
 	uptime := time.Since(s.startTime).Seconds()
-	json.NewEncoder(w).Encode(map[string]interface{}{
+	json.NewEncoder(w).Encode(map[string]any{
 		"status": "ok",
 		"uptime": uptime,
 	})
@@ -75,7 +75,7 @@ func (s *Server) handleWebhook(w http.ResponseWriter, r *http.Request) {
 		fmt.Printf("Webhook error: %v\n", err)
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusInternalServerError)
-		json.NewEncoder(w).Encode(map[string]interface{}{
+		json.NewEncoder(w).Encode(map[string]any{
 			"error": "Internal server error",
 		})
 		return
@@ -86,7 +86,7 @@ func (s *Server) handleWebhook(w http.ResponseWriter, r *http.Request) {
 		fmt.Printf("Webhook parse error: %v\n", err)
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusBadRequest)
-		json.NewEncoder(w).Encode(map[string]interface{}{
+		json.NewEncoder(w).Encode(map[string]any{
 			"error": "Bad request",
 		})
 		return
@@ -99,7 +99,7 @@ func (s *Server) handleWebhook(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(map[string]interface{}{
+	json.NewEncoder(w).Encode(map[string]any{
 		"status":    "ok",
 		"processed": len(messages),
 	})
@@ -109,7 +109,7 @@ func (s *Server) handleWebhook(w http.ResponseWriter, r *http.Request) {
 func (s *Server) handleNotFound(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusNotFound)
-	json.NewEncoder(w).Encode(map[string]interface{}{
+	json.NewEncoder(w).Encode(map[string]any{
 		"error": "Not found",
 	})
 }
