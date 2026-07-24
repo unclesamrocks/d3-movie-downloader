@@ -18,3 +18,9 @@ services:
       - ./temp:/app/temp
     ports:
       - "${PORT:-3000}:3000"
+    networks:
+      - scripts-vpn_default # Подключаемся к существующей сети nginx
+
+networks:
+  scripts-vpn_default:
+    external: true
