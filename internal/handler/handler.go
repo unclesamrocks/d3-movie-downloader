@@ -293,10 +293,13 @@ func (h *CommandHandler) handleUrl(msg messenger.IncomingMessage) {
 	h.messenger.SendText(userID, fmt.Sprintf("🚀 Начинаю загрузку с %s\n\nСтатус: %s", text, h.formatTaskStatus(task)))
 }
 
-// isValidUrl checks if text is a valid URL
+// isValidUrl checks if text is a valid URL with a scheme and host
 func (h *CommandHandler) isValidUrl(text string) bool {
-	_, err := url.Parse(text)
-	return err == nil
+	u, err := url.Parse(text)
+	if err != nil {
+		return false
+	}
+	return u.Scheme != "" && u.Host != ""
 }
 
 // getDomainList returns formatted list of whitelisted domains
