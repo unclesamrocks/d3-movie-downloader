@@ -3,7 +3,9 @@
     "allow": [
       "Bash(npm run *)",
       "WebFetch(domain:core.telegram.org)",
-      "Bash(npx tsc *)"
+      "Bash(npx tsc *)",
+      "Bash(go build *)",
+      "Bash(go vet *)"
     ]
   }
 }
