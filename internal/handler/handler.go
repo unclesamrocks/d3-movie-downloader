@@ -193,7 +193,7 @@ func (h *CommandHandler) handleListDomains(msg messenger.IncomingMessage) {
 
 	var domainList strings.Builder
 	for _, d := range domains {
-		domainList.WriteString(fmt.Sprintf("• %s\n", d.Domain))
+		fmt.Fprintf(&domainList, "• %s\n", d.Domain)
 	}
 
 	h.messenger.SendText(msg.UserID, h.localizer.Localize(msg.Language, "domain_list", map[string]any{"List": strings.TrimSpace(domainList.String())}))
@@ -298,7 +298,7 @@ func (h *CommandHandler) getDomainList(lang string) string {
 
 	var domainList strings.Builder
 	for _, d := range domains {
-		domainList.WriteString(fmt.Sprintf("• %s\n", d.Domain))
+		fmt.Fprintf(&domainList, "• %s\n", d.Domain)
 	}
 	return strings.TrimSpace(domainList.String())
 }
@@ -335,8 +335,8 @@ func (h *CommandHandler) formatTaskStatus(task *downloader.DownloadTask, lang st
 	}
 
 	var message strings.Builder
-	message.WriteString(fmt.Sprintf("%s <b>%s</b>\n", emoji, statusName))
-	message.WriteString(fmt.Sprintf("🔗 URL: %s\n", task.URL))
+	fmt.Fprintf(&message, "%s <b>%s</b>\n", emoji, statusName)
+	fmt.Fprintf(&message, "🔗 URL: %s\n", task.URL)
 	message.WriteString(h.localizer.Localize(lang, "progress", map[string]any{"Progress": task.Progress}))
 
 	if task.FileSize > 0 && task.DownloadedBytes > 0 {
