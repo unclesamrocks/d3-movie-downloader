@@ -59,6 +59,10 @@ type DownloadManager struct {
 
 // NewDownloadManager creates a new download manager
 func NewDownloadManager(m messenger.MessengerAdapter, maxConcurrent int, tempDir string) *DownloadManager {
+	transport := &http.Transport{
+		MaxIdleConnsPerHost: maxConcurrent,
+	}
+
 	return &DownloadManager{
 		tasks:           make(map[string]*DownloadTask),
 		userTasks:       make(map[string]string),
@@ -67,7 +71,10 @@ func NewDownloadManager(m messenger.MessengerAdapter, maxConcurrent int, tempDir
 		maxConcurrent:   maxConcurrent,
 		activeDownloads: 0,
 		tempDir:         tempDir,
-		client:          &http.Client{Timeout: 0}, // No timeout for large downloads
+		client: &http.Client{
+			Transport: transport,
+			Timeout:   1 * time.Minute,
+		},
 	}
 }
 
