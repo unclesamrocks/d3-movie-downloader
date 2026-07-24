@@ -2,6 +2,7 @@ package handler
 
 import (
 	"fmt"
+	"html"
 	"net/url"
 	"strconv"
 	"strings"
@@ -122,7 +123,7 @@ func (h *CommandHandler) handleAdminCommand(msg messenger.IncomingMessage, comma
 
 func (h *CommandHandler) handleAddUser(userID string, args []string) {
 	if len(args) < 1 {
-		h.messenger.SendText(userID, "❌ Использование: /adduser <telegram_user_id>")
+		h.messenger.SendText(userID, html.EscapeString("❌ Использование: /adduser <telegram_user_id>"))
 		return
 	}
 
@@ -142,7 +143,7 @@ func (h *CommandHandler) handleAddUser(userID string, args []string) {
 
 func (h *CommandHandler) handleRemoveUser(userID string, args []string) {
 	if len(args) < 1 {
-		h.messenger.SendText(userID, "❌ Использование: /removeuser <telegram_user_id>")
+		h.messenger.SendText(userID, html.EscapeString("❌ Использование: /removeuser <telegram_user_id>"))
 		return
 	}
 
@@ -162,7 +163,7 @@ func (h *CommandHandler) handleRemoveUser(userID string, args []string) {
 
 func (h *CommandHandler) handleAddDomain(userID string, args []string) {
 	if len(args) < 1 {
-		h.messenger.SendText(userID, "❌ Использование: /adddomain <domain>")
+		h.messenger.SendText(userID, html.EscapeString("❌ Использование: /adddomain <domain>"))
 		return
 	}
 
@@ -176,7 +177,7 @@ func (h *CommandHandler) handleAddDomain(userID string, args []string) {
 
 func (h *CommandHandler) handleRemoveDomain(userID string, args []string) {
 	if len(args) < 1 {
-		h.messenger.SendText(userID, "❌ Использование: /removedomain <domain>")
+		h.messenger.SendText(userID, html.EscapeString("❌ Использование: /removedomain <domain>"))
 		return
 	}
 
@@ -219,10 +220,10 @@ func (h *CommandHandler) handleHelp(userID string) {
 
 	if isAdmin {
 		helpText.WriteString("\n\n<b>👮 Админ команды:</b>\n")
-		helpText.WriteString("/adduser <id> - Добавить пользователя в whitelist\n")
-		helpText.WriteString("/removeuser <id> - Удалить пользователя из whitelist\n")
-		helpText.WriteString("/adddomain <domain> - Добавить домен\n")
-		helpText.WriteString("/removedomain <domain> - Удалить домен\n")
+		helpText.WriteString(html.EscapeString("/adduser <id> - Добавить пользователя в whitelist\n"))
+		helpText.WriteString(html.EscapeString("/removeuser <id> - Удалить пользователя из whitelist\n"))
+		helpText.WriteString(html.EscapeString("/adddomain <domain> - Добавить домен\n"))
+		helpText.WriteString(html.EscapeString("/removedomain <domain> - Удалить домен\n"))
 		helpText.WriteString("/listdomains - Показать все домены в whitelist")
 	}
 
