@@ -32,40 +32,32 @@ func NewCommandHandler(dm *downloader.DownloadManager, database *db.Database, m 
 
 // HandleMessage processes an incoming message
 func (h *CommandHandler) HandleMessage(msg messenger.IncomingMessage) {
-	userID := msg.UserID
-	text := msg.Text
-	lang := msg.Language
-
 	// Check if user is whitelisted
-	userIDInt, _ := strconv.ParseInt(userID, 10, 64)
+	userIDInt, _ := strconv.ParseInt(msg.UserID, 10, 64)
 	if !h.db.IsUserWhitelisted(userIDInt) {
-		h.messenger.SendText(userID, h.localizer.Localize(lang, "not_whitelisted", map[string]interface{}{"UserID": userID}))
+		h.messenger.SendText(msg.UserID, h.localizer.Localize(msg.Language, "not_whitelisted", map[string]interface{}{"UserID": msg.UserID}))
 		return
 	}
 
 	// Check if it's a command
-	if strings.HasPrefix(text, "/") {
+	if strings.HasPrefix(msg.Text, "/") {
 		h.handleCommand(msg)
 		return
 	}
 
 	// Check if it's a URL
-	if h.isValidUrl(text) {
+	if h.isValidUrl(msg.Text) {
 		h.handleUrl(msg)
 		return
 	}
 
 	// Unknown message type
-	h.messenger.SendText(userID, h.localizer.Localize(lang, "send_url_or_help", nil))
+	h.messenger.SendText(msg.UserID, h.localizer.Localize(msg.Language, "send_url_or_help", nil))
 }
 
 // handleCommand routes commands to appropriate handlers
 func (h *CommandHandler) handleCommand(msg messenger.IncomingMessage) {
-	userID := msg.UserID
-	lang := msg.Language
-	text := msg.Text
-	command := strings.Split(text, " ")[0]
-	command = strings.ToLower(command)
+	command := strings.ToLower(strings.Split(msg.Text, " ")[0])
 
 	// Admin commands
 	adminCommands := map[string]bool{
@@ -76,12 +68,12 @@ func (h *CommandHandler) handleCommand(msg messenger.IncomingMessage) {
 		"/listdomains":  true,
 	}
 
-	userIDInt, _ := strconv.ParseInt(userID, 10, 64)
+	userIDInt, _ := strconv.ParseInt(msg.UserID, 10, 64)
 	isAdmin := h.db.IsAdminWhitelisted(userIDInt)
 
 	if adminCommands[command] {
 		if !isAdmin {
-			h.messenger.SendText(userID, h.localizer.Localize(lang, "no_permission", nil))
+			h.messenger.SendText(msg.UserID, h.localizer.Localize(msg.Language, "no_permission", nil))
 			return
 		}
 		h.handleAdminCommand(msg, command)
@@ -91,20 +83,18 @@ func (h *CommandHandler) handleCommand(msg messenger.IncomingMessage) {
 	// Regular commands
 	switch command {
 	case "/start", "/help":
-		h.handleHelp(userID, lang)
+		h.handleHelp(msg)
 	case "/status":
-		h.handleStatus(userID, lang)
+		h.handleStatus(msg)
 	case "/stop":
-		h.handleStop(userID, lang)
+		h.handleStop(msg)
 	default:
-		h.messenger.SendText(userID, h.localizer.Localize(lang, "unknown_command", nil))
+		h.messenger.SendText(msg.UserID, h.localizer.Localize(msg.Language, "unknown_command", nil))
 	}
 }
 
 // handleAdminCommand routes admin commands
 func (h *CommandHandler) handleAdminCommand(msg messenger.IncomingMessage, command string) {
-	userID := msg.UserID
-	lang := msg.Language
 	args := strings.Split(msg.Text, " ")
 	if len(args) > 1 {
 		args = args[1:]
@@ -114,90 +104,90 @@ func (h *CommandHandler) handleAdminCommand(msg messenger.IncomingMessage, comma
 
 	switch command {
 	case "/adduser":
-		h.handleAddUser(userID, lang, args)
+		h.handleAddUser(msg, args)
 	case "/removeuser":
-		h.handleRemoveUser(userID, lang, args)
+		h.handleRemoveUser(msg, args)
 	case "/adddomain":
-		h.handleAddDomain(userID, lang, args)
+		h.handleAddDomain(msg, args)
 	case "/removedomain":
-		h.handleRemoveDomain(userID, lang, args)
+		h.handleRemoveDomain(msg, args)
 	case "/listdomains":
-		h.handleListDomains(userID, lang)
+		h.handleListDomains(msg)
 	}
 }
 
-func (h *CommandHandler) handleAddUser(userID string, lang string, args []string) {
+func (h *CommandHandler) handleAddUser(msg messenger.IncomingMessage, args []string) {
 	if len(args) < 1 {
-		h.messenger.SendText(userID, h.localizer.Localize(lang, "adduser_usage", nil))
+		h.messenger.SendText(msg.UserID, h.localizer.Localize(msg.Language, "adduser_usage", nil))
 		return
 	}
 
 	targetID, err := strconv.ParseInt(args[0], 10, 64)
 	if err != nil {
-		h.messenger.SendText(userID, h.localizer.Localize(lang, "invalid_user_id", nil))
+		h.messenger.SendText(msg.UserID, h.localizer.Localize(msg.Language, "invalid_user_id", nil))
 		return
 	}
 
 	if err := h.db.AddUserToWhitelist(targetID); err != nil {
-		h.messenger.SendText(userID, h.localizer.Localize(lang, "error", map[string]interface{}{"Error": err.Error()}))
+		h.messenger.SendText(msg.UserID, h.localizer.Localize(msg.Language, "error", map[string]interface{}{"Error": err.Error()}))
 		return
 	}
 
-	h.messenger.SendText(userID, h.localizer.Localize(lang, "user_added", map[string]interface{}{"UserID": targetID}))
+	h.messenger.SendText(msg.UserID, h.localizer.Localize(msg.Language, "user_added", map[string]interface{}{"UserID": targetID}))
 }
 
-func (h *CommandHandler) handleRemoveUser(userID string, lang string, args []string) {
+func (h *CommandHandler) handleRemoveUser(msg messenger.IncomingMessage, args []string) {
 	if len(args) < 1 {
-		h.messenger.SendText(userID, h.localizer.Localize(lang, "removeuser_usage", nil))
+		h.messenger.SendText(msg.UserID, h.localizer.Localize(msg.Language, "removeuser_usage", nil))
 		return
 	}
 
 	targetID, err := strconv.ParseInt(args[0], 10, 64)
 	if err != nil {
-		h.messenger.SendText(userID, h.localizer.Localize(lang, "invalid_user_id", nil))
+		h.messenger.SendText(msg.UserID, h.localizer.Localize(msg.Language, "invalid_user_id", nil))
 		return
 	}
 
 	if err := h.db.RemoveUserFromWhitelist(targetID); err != nil {
-		h.messenger.SendText(userID, h.localizer.Localize(lang, "error", map[string]interface{}{"Error": err.Error()}))
+		h.messenger.SendText(msg.UserID, h.localizer.Localize(msg.Language, "error", map[string]interface{}{"Error": err.Error()}))
 		return
 	}
 
-	h.messenger.SendText(userID, h.localizer.Localize(lang, "user_removed", map[string]interface{}{"UserID": targetID}))
+	h.messenger.SendText(msg.UserID, h.localizer.Localize(msg.Language, "user_removed", map[string]interface{}{"UserID": targetID}))
 }
 
-func (h *CommandHandler) handleAddDomain(userID string, lang string, args []string) {
+func (h *CommandHandler) handleAddDomain(msg messenger.IncomingMessage, args []string) {
 	if len(args) < 1 {
-		h.messenger.SendText(userID, h.localizer.Localize(lang, "adddomain_usage", nil))
+		h.messenger.SendText(msg.UserID, h.localizer.Localize(msg.Language, "adddomain_usage", nil))
 		return
 	}
 
 	if err := h.db.AddDomainToWhitelist(args[0]); err != nil {
-		h.messenger.SendText(userID, h.localizer.Localize(lang, "error", map[string]interface{}{"Error": err.Error()}))
+		h.messenger.SendText(msg.UserID, h.localizer.Localize(msg.Language, "error", map[string]interface{}{"Error": err.Error()}))
 		return
 	}
 
-	h.messenger.SendText(userID, h.localizer.Localize(lang, "domain_added", map[string]interface{}{"Domain": args[0]}))
+	h.messenger.SendText(msg.UserID, h.localizer.Localize(msg.Language, "domain_added", map[string]interface{}{"Domain": args[0]}))
 }
 
-func (h *CommandHandler) handleRemoveDomain(userID string, lang string, args []string) {
+func (h *CommandHandler) handleRemoveDomain(msg messenger.IncomingMessage, args []string) {
 	if len(args) < 1 {
-		h.messenger.SendText(userID, h.localizer.Localize(lang, "removedomain_usage", nil))
+		h.messenger.SendText(msg.UserID, h.localizer.Localize(msg.Language, "removedomain_usage", nil))
 		return
 	}
 
 	if err := h.db.RemoveDomainFromWhitelist(args[0]); err != nil {
-		h.messenger.SendText(userID, h.localizer.Localize(lang, "error", map[string]interface{}{"Error": err.Error()}))
+		h.messenger.SendText(msg.UserID, h.localizer.Localize(msg.Language, "error", map[string]interface{}{"Error": err.Error()}))
 		return
 	}
 
-	h.messenger.SendText(userID, h.localizer.Localize(lang, "domain_removed", map[string]interface{}{"Domain": args[0]}))
+	h.messenger.SendText(msg.UserID, h.localizer.Localize(msg.Language, "domain_removed", map[string]interface{}{"Domain": args[0]}))
 }
 
-func (h *CommandHandler) handleListDomains(userID string, lang string) {
+func (h *CommandHandler) handleListDomains(msg messenger.IncomingMessage) {
 	domains := h.db.GetAllWhitelistedDomains()
 	if len(domains) == 0 {
-		h.messenger.SendText(userID, h.localizer.Localize(lang, "no_domains", nil))
+		h.messenger.SendText(msg.UserID, h.localizer.Localize(msg.Language, "no_domains", nil))
 		return
 	}
 
@@ -206,92 +196,88 @@ func (h *CommandHandler) handleListDomains(userID string, lang string) {
 		domainList.WriteString(fmt.Sprintf("• %s\n", d.Domain))
 	}
 
-	h.messenger.SendText(userID, h.localizer.Localize(lang, "domain_list", map[string]interface{}{"List": strings.TrimSpace(domainList.String())}))
+	h.messenger.SendText(msg.UserID, h.localizer.Localize(msg.Language, "domain_list", map[string]interface{}{"List": strings.TrimSpace(domainList.String())}))
 }
 
 // handleHelp shows help text
-func (h *CommandHandler) handleHelp(userID string, lang string) {
-	userIDInt, _ := strconv.ParseInt(userID, 10, 64)
+func (h *CommandHandler) handleHelp(msg messenger.IncomingMessage) {
+	userIDInt, _ := strconv.ParseInt(msg.UserID, 10, 64)
 	isAdmin := h.db.IsAdminWhitelisted(userIDInt)
 
 	var helpText strings.Builder
-	helpText.WriteString(h.localizer.Localize(lang, "help_header", nil))
-	helpText.WriteString(h.localizer.Localize(lang, "help_commands", nil))
-	helpText.WriteString(h.localizer.Localize(lang, "help_usage", nil))
-	helpText.WriteString(h.localizer.Localize(lang, "help_domains", nil))
-	helpText.WriteString(h.getDomainList(lang))
+	helpText.WriteString(h.localizer.Localize(msg.Language, "help_header", nil))
+	helpText.WriteString(h.localizer.Localize(msg.Language, "help_commands", nil))
+	helpText.WriteString(h.localizer.Localize(msg.Language, "help_usage", nil))
+	helpText.WriteString(h.localizer.Localize(msg.Language, "help_domains", nil))
+	helpText.WriteString(h.getDomainList(msg.Language))
 
 	if isAdmin {
 		helpText.WriteString("\n\n")
-		helpText.WriteString(h.localizer.Localize(lang, "help_admin", nil))
+		helpText.WriteString(h.localizer.Localize(msg.Language, "help_admin", nil))
 	}
 
-	h.messenger.SendText(userID, helpText.String())
+	h.messenger.SendText(msg.UserID, helpText.String())
 }
 
 // handleStatus shows the status of the user's current download
-func (h *CommandHandler) handleStatus(userID string, lang string) {
-	task := h.downloadManager.GetUserTask(userID)
+func (h *CommandHandler) handleStatus(msg messenger.IncomingMessage) {
+	task := h.downloadManager.GetUserTask(msg.UserID)
 
 	if task == nil {
-		h.messenger.SendText(userID, h.localizer.Localize(lang, "no_active_downloads", nil))
+		h.messenger.SendText(msg.UserID, h.localizer.Localize(msg.Language, "no_active_downloads", nil))
 		return
 	}
 
-	statusText := h.formatTaskStatus(task, lang)
-	h.messenger.SendText(userID, statusText)
+	statusText := h.formatTaskStatus(task, msg.Language)
+	h.messenger.SendText(msg.UserID, statusText)
 }
 
 // handleStop stops the user's current download
-func (h *CommandHandler) handleStop(userID string, lang string) {
-	task := h.downloadManager.GetUserTask(userID)
+func (h *CommandHandler) handleStop(msg messenger.IncomingMessage) {
+	task := h.downloadManager.GetUserTask(msg.UserID)
 
 	if task == nil {
-		h.messenger.SendText(userID, h.localizer.Localize(lang, "no_active_downloads_to_stop", nil))
+		h.messenger.SendText(msg.UserID, h.localizer.Localize(msg.Language, "no_active_downloads_to_stop", nil))
 		return
 	}
 
-	stopped, err := h.downloadManager.StopTask(userID)
+	stopped, err := h.downloadManager.StopTask(msg.UserID)
 	if err != nil {
-		h.messenger.SendText(userID, h.localizer.Localize(lang, "stop_failed", map[string]interface{}{"Error": err.Error()}))
+		h.messenger.SendText(msg.UserID, h.localizer.Localize(msg.Language, "stop_failed", map[string]interface{}{"Error": err.Error()}))
 		return
 	}
 
 	if stopped {
-		h.messenger.SendText(userID, h.localizer.Localize(lang, "download_stopped", nil))
+		h.messenger.SendText(msg.UserID, h.localizer.Localize(msg.Language, "download_stopped", nil))
 	} else {
-		h.messenger.SendText(userID, h.localizer.Localize(lang, "stop_failed_generic", nil))
+		h.messenger.SendText(msg.UserID, h.localizer.Localize(msg.Language, "stop_failed_generic", nil))
 	}
 }
 
 // handleUrl handles URL submission from user
 func (h *CommandHandler) handleUrl(msg messenger.IncomingMessage) {
-	userID := msg.UserID
-	lang := msg.Language
-	text := msg.Text
-
 	// Check if user already has an active download
-	existingTask := h.downloadManager.GetUserTask(userID)
+	existingTask := h.downloadManager.GetUserTask(msg.UserID)
 	if existingTask != nil {
-		statusText := h.formatTaskStatus(existingTask, lang)
-		h.messenger.SendText(userID, h.localizer.Localize(lang, "active_download_exists", map[string]interface{}{"Status": statusText}))
+		statusText := h.formatTaskStatus(existingTask, msg.Language)
+		h.messenger.SendText(msg.UserID, h.localizer.Localize(msg.Language, "active_download_exists", map[string]interface{}{"Status": statusText}))
 		return
 	}
 
 	// Check if domain is whitelisted
-	if !h.db.IsDomainOrSubdomainWhitelisted(text) {
-		h.messenger.SendText(userID, h.localizer.Localize(lang, "domain_not_whitelisted", nil))
+	if !h.db.IsDomainOrSubdomainWhitelisted(msg.Text) {
+		h.messenger.SendText(msg.UserID, h.localizer.Localize(msg.Language, "domain_not_whitelisted", nil))
 		return
 	}
 
 	// Create download task
-	task, err := h.downloadManager.CreateTask(userID, text, lang)
+	task, err := h.downloadManager.CreateTask(msg.UserID, msg.Text, msg.Language)
 	if err != nil || task == nil {
-		h.messenger.SendText(userID, h.localizer.Localize(lang, "create_task_failed", nil))
+		h.messenger.SendText(msg.UserID, h.localizer.Localize(msg.Language, "create_task_failed", nil))
 		return
 	}
 
-	h.messenger.SendText(userID, h.localizer.Localize(lang, "starting_download", map[string]interface{}{"URL": text, "Status": h.formatTaskStatus(task, lang)}))
+	h.messenger.SendText(msg.UserID, h.localizer.Localize(msg.Language, "starting_download", map[string]interface{}{"URL": msg.Text, "Status": h.formatTaskStatus(task, msg.Language)}))
 }
 
 // isValidUrl checks if text is a valid URL with a scheme and host
