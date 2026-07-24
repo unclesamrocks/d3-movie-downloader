@@ -1,4 +1,4 @@
-.PHONY: build clean vet
+.PHONY: build clean vet fmt
 
 BINARY_NAME := d3-movie-downloader
 BINARY_DIR := bin
@@ -24,3 +24,8 @@ vet:
 	@echo "🔍 Running go vet..."
 	go vet ./...
 	@echo "✅ Vet done"
+
+fmt:
+	@echo "🎨 Formatting Go code..."
+	@gofmt -s -w .
+	@echo "✅ Format done"
