@@ -36,7 +36,7 @@ func (h *CommandHandler) HandleMessage(msg messenger.IncomingMessage) {
 	// Check if user is whitelisted
 	userIDInt, _ := strconv.ParseInt(userID, 10, 64)
 	if !h.db.IsUserWhitelisted(userIDInt) {
-		h.messenger.SendText(userID, "❌ Вы не находитесь в белом списке. Обратитесь к администратору.")
+		h.messenger.SendText(userID, fmt.Sprintf("❌ Вы не находитесь в белом списке. Обратитесь к администратору. (Ваш telegram ID: %s)", userID))
 		return
 	}
 
