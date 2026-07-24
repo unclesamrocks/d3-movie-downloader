@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"html"
 	"io"
 	"mime/multipart"
 	"net/http"
@@ -129,7 +130,7 @@ func (t *TelegramAdapter) parseUpdates(updates []telegramUpdate) []IncomingMessa
 func (t *TelegramAdapter) SendText(userID string, text string) error {
 	err := t.makeRequest("sendMessage", map[string]interface{}{
 		"chat_id":    userID,
-		"text":       text,
+		"text":       html.EscapeString(text),
 		"parse_mode": "HTML",
 	})
 	if err != nil {
