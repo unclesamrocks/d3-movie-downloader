@@ -13,5 +13,32 @@
       "Bash(go get *)",
       "Bash(go mod *)"
     ]
-  }
+  },
+  "deny": [
+    "git add",
+    "git commit",
+    "git push",
+    "git pull",
+    "git fetch",
+    "git branch",
+    "git checkout",
+    "git merge",
+    "git rebase",
+    "git reset",
+    "git revert",
+    "git stash",
+    "git tag",
+    "git log",
+    "git status",
+    "git diff",
+    "git show",
+    "git remote",
+    "git clone",
+    "git init",
+    "git rm",
+    "git mv",
+    "git config",
+    "git submodule",
+    "git worktree"
+  ]
 }
