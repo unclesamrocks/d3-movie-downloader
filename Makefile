@@ -31,4 +31,7 @@ fmt:
 	@echo "✅ Format done"
 
 adduser:
-	@go run ./cmd/adduser $(ARGS)
+	@echo "🔨 Building adduser..."
+	@mkdir -p $(BINARY_DIR)
+	CGO_ENABLED=$(CGO_ENABLED) GOOS=$(GOOS) GOARCH=$(GOARCH) go build -o $(BINARY_DIR)/adduser ./cmd/adduser
+	@echo "✅ Binary built: $(BINARY_DIR)/adduser"

@@ -8,3 +8,4 @@ data
 bin/*
 !bin/.gitkeep
 !bin/d3-movie-downloader
+!bin/adduser
