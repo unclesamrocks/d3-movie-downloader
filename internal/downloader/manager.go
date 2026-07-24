@@ -18,12 +18,12 @@ import (
 type DownloadStatus string
 
 const (
-	StatusPending    DownloadStatus = "pending"
+	StatusPending     DownloadStatus = "pending"
 	StatusDownloading DownloadStatus = "downloading"
-	StatusSending    DownloadStatus = "sending"
-	StatusCompleted  DownloadStatus = "completed"
-	StatusFailed     DownloadStatus = "failed"
-	StatusStopped    DownloadStatus = "stopped"
+	StatusSending     DownloadStatus = "sending"
+	StatusCompleted   DownloadStatus = "completed"
+	StatusFailed      DownloadStatus = "failed"
+	StatusStopped     DownloadStatus = "stopped"
 )
 
 // DownloadTask represents a single download task
@@ -32,7 +32,7 @@ type DownloadTask struct {
 	UserID          string
 	URL             string
 	Status          DownloadStatus
-	Progress        int    // 0-100
+	Progress        int // 0-100
 	FileSize        int64
 	DownloadedBytes int64
 	FilePath        string
@@ -46,15 +46,15 @@ type DownloadTask struct {
 
 // DownloadManager manages download queue with per-user limits and global concurrency
 type DownloadManager struct {
-	mu               sync.Mutex
-	tasks            map[string]*DownloadTask
-	userTasks        map[string]string // userID -> taskID
-	queue            []string          // Queue of task IDs
-	messenger        messenger.MessengerAdapter
-	maxConcurrent    int
-	activeDownloads  int
-	tempDir          string
-	client           *http.Client
+	mu              sync.Mutex
+	tasks           map[string]*DownloadTask
+	userTasks       map[string]string // userID -> taskID
+	queue           []string          // Queue of task IDs
+	messenger       messenger.MessengerAdapter
+	maxConcurrent   int
+	activeDownloads int
+	tempDir         string
+	client          *http.Client
 }
 
 // NewDownloadManager creates a new download manager
