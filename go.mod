@@ -4,6 +4,9 @@ go 1.26.5
 
 require (
 	github.com/joho/godotenv v1.5.1
+	github.com/nicksnyder/go-i18n/v2 v2.6.1
+	github.com/pelletier/go-toml/v2 v2.4.3
+	golang.org/x/text v0.32.0
 	modernc.org/sqlite v1.54.0
 )
 

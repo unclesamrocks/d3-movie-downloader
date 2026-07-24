@@ -16,11 +16,12 @@ import (
 // Telegram API types
 
 type telegramUser struct {
-	ID        int64  `json:"id"`
-	IsBot     bool   `json:"is_bot"`
-	FirstName string `json:"first_name"`
-	LastName  string `json:"last_name,omitempty"`
-	Username  string `json:"username,omitempty"`
+	ID           int64  `json:"id"`
+	IsBot        bool   `json:"is_bot"`
+	FirstName    string `json:"first_name"`
+	LastName     string `json:"last_name,omitempty"`
+	Username     string `json:"username,omitempty"`
+	LanguageCode string `json:"language_code,omitempty"`
 }
 
 type telegramChat struct {
@@ -104,8 +105,12 @@ func (t *TelegramAdapter) parseUpdates(updates []telegramUpdate) []IncomingMessa
 
 		msg := update.Message
 		userID := msg.Chat.ID
+		lang := "ru"
 		if msg.From != nil {
 			userID = msg.From.ID
+			if msg.From.LanguageCode != "" {
+				lang = msg.From.LanguageCode
+			}
 		}
 
 		text := msg.Text
@@ -118,6 +123,7 @@ func (t *TelegramAdapter) parseUpdates(updates []telegramUpdate) []IncomingMessa
 			UserID:     fmt.Sprintf("%d", userID),
 			ChatID:     fmt.Sprintf("%d", msg.Chat.ID),
 			Text:       text,
+			Language:   lang,
 			ReceivedAt: time.Unix(msg.Date, 0),
 		})
 	}
@@ -266,8 +272,12 @@ func (t *TelegramAdapter) pollUpdates(ctx context.Context, onMessage func(Incomi
 				if update.Message != nil {
 					msg := update.Message
 					userID := msg.Chat.ID
+					lang := "ru"
 					if msg.From != nil {
 						userID = msg.From.ID
+						if msg.From.LanguageCode != "" {
+							lang = msg.From.LanguageCode
+						}
 					}
 
 					text := msg.Text
@@ -280,6 +290,7 @@ func (t *TelegramAdapter) pollUpdates(ctx context.Context, onMessage func(Incomi
 						UserID:     fmt.Sprintf("%d", userID),
 						ChatID:     fmt.Sprintf("%d", msg.Chat.ID),
 						Text:       text,
+						Language:   lang,
 						ReceivedAt: time.Unix(msg.Date, 0),
 					}
 

@@ -10,6 +10,7 @@ import (
 	"syscall"
 	"time"
 
+	"d3-movie-downloader/internal/i18n"
 	"d3-movie-downloader/internal/messenger"
 	"d3-movie-downloader/internal/parser"
 )
@@ -38,6 +39,7 @@ type DownloadTask struct {
 	FilePath        string
 	Width           int
 	Height          int
+	Language        string // User's language code
 	CreatedAt       time.Time
 	StartedAt       *time.Time
 	CompletedAt     *time.Time
@@ -51,6 +53,7 @@ type DownloadManager struct {
 	userTasks       map[string]string // userID -> taskID
 	queue           []string          // Queue of task IDs
 	messenger       messenger.MessengerAdapter
+	localizer       *i18n.Localizer
 	maxConcurrent   int
 	activeDownloads int
 	tempDir         string
@@ -58,7 +61,7 @@ type DownloadManager struct {
 }
 
 // NewDownloadManager creates a new download manager
-func NewDownloadManager(m messenger.MessengerAdapter, maxConcurrent int, tempDir string) *DownloadManager {
+func NewDownloadManager(m messenger.MessengerAdapter, l *i18n.Localizer, maxConcurrent int, tempDir string) *DownloadManager {
 	transport := &http.Transport{
 		MaxIdleConnsPerHost: maxConcurrent,
 	}
@@ -68,6 +71,7 @@ func NewDownloadManager(m messenger.MessengerAdapter, maxConcurrent int, tempDir
 		userTasks:       make(map[string]string),
 		queue:           make([]string, 0),
 		messenger:       m,
+		localizer:       l,
 		maxConcurrent:   maxConcurrent,
 		activeDownloads: 0,
 		tempDir:         tempDir,
@@ -80,7 +84,7 @@ func NewDownloadManager(m messenger.MessengerAdapter, maxConcurrent int, tempDir
 
 // CreateTask creates a new download task
 // Returns nil if user already has an active download
-func (dm *DownloadManager) CreateTask(userID string, url string) (*DownloadTask, error) {
+func (dm *DownloadManager) CreateTask(userID string, url string, lang string) (*DownloadTask, error) {
 	dm.mu.Lock()
 	defer dm.mu.Unlock()
 
@@ -102,6 +106,7 @@ func (dm *DownloadManager) CreateTask(userID string, url string) (*DownloadTask,
 		URL:       url,
 		Status:    StatusPending,
 		Progress:  0,
+		Language:  lang,
 		CreatedAt: time.Now(),
 	}
 
@@ -281,7 +286,7 @@ func (dm *DownloadManager) processTask(taskID string) {
 		task.CompletedAt = &now
 		dm.mu.Unlock()
 
-		dm.messenger.SendText(task.UserID, "❌ Недостаточно места на диске для загрузки этого файла.")
+		dm.messenger.SendText(task.UserID, dm.localizer.Localize(task.Language, "insufficient_disk_space", nil))
 		return
 	}
 
@@ -313,7 +318,7 @@ func (dm *DownloadManager) processTask(taskID string) {
 	task.Status = StatusSending
 	dm.mu.Unlock()
 
-	if err := dm.messenger.SendFile(task.UserID, filePath, "🎬 Ваше видео готово!", task.Width, task.Height); err != nil {
+	if err := dm.messenger.SendFile(task.UserID, filePath, dm.localizer.Localize(task.Language, "video_ready", nil), task.Width, task.Height); err != nil {
 		// Clean up file on send failure
 		os.Remove(filePath)
 		dm.handleTaskError(task, fmt.Errorf("failed to send file: %w", err))
@@ -330,7 +335,7 @@ func (dm *DownloadManager) processTask(taskID string) {
 	task.Progress = 100
 	dm.mu.Unlock()
 
-	dm.messenger.SendText(task.UserID, "✅ Видео успешно загружено и отправлено!")
+	dm.messenger.SendText(task.UserID, dm.localizer.Localize(task.Language, "download_success", nil))
 }
 
 func (dm *DownloadManager) handleTaskError(task *DownloadTask, err error) {
@@ -347,7 +352,7 @@ func (dm *DownloadManager) handleTaskError(task *DownloadTask, err error) {
 	dm.mu.Unlock()
 
 	fmt.Printf("Download error: %v\n", err)
-	dm.messenger.SendText(task.UserID, fmt.Sprintf("❌ Ошибка загрузки: %s", err.Error()))
+	dm.messenger.SendText(task.UserID, dm.localizer.Localize(task.Language, "download_error", map[string]interface{}{"Error": err.Error()}))
 }
 
 // extractVideoUrl fetches HTML and extracts video URL

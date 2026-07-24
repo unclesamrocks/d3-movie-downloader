@@ -8,6 +8,7 @@ type IncomingMessage struct {
 	UserID     string
 	ChatID     string
 	Text       string
+	Language   string // User's language code (e.g. "ru", "en")
 	ReceivedAt time.Time
 }
 

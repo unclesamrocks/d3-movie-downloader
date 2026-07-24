@@ -1,0 +1,131 @@
+[not_whitelisted]
+other = "❌ Вы не находитесь в белом списке. Обратитесь к администратору. (Ваш telegram ID: {{.UserID}})"
+
+[send_url_or_help]
+other = "❓ Отправьте ссылку на видео или используйте команду /help для справки."
+
+[no_permission]
+other = "❌ У вас нет прав для выполнения этой команды."
+
+[unknown_command]
+other = "❓ Неизвестная команда. Используйте /help для справки."
+
+[adduser_usage]
+other = "❌ Использование: /adduser &lt;telegram_user_id&gt;"
+
+[removeuser_usage]
+other = "❌ Использование: /removeuser &lt;telegram_user_id&gt;"
+
+[adddomain_usage]
+other = "❌ Использование: /adddomain &lt;domain&gt;"
+
+[removedomain_usage]
+other = "❌ Использование: /removedomain &lt;domain&gt;"
+
+[invalid_user_id]
+other = "❌ Неверный ID пользователя"
+
+[error]
+other = "❌ Ошибка: {{.Error}}"
+
+[user_added]
+other = "✅ Пользователь {{.UserID}} добавлен в whitelist"
+
+[user_removed]
+other = "✅ Пользователь {{.UserID}} удалён из whitelist"
+
+[domain_added]
+other = "✅ Домен {{.Domain}} добавлен в whitelist"
+
+[domain_removed]
+other = "✅ Домен {{.Domain}} удалён из whitelist"
+
+[no_domains]
+other = "📋 В whitelist нет доменов."
+
+[domain_list]
+other = "📋 Домены в whitelist:\n\n{{.List}}"
+
+[help_header]
+other = "🎬 <b>D3 Movie Downloader Bot</b>\n\n"
+
+[help_commands]
+other = "Доступные команды:\n/status - Проверить статус текущей загрузки\n/stop - Остановить текущую загрузку\n\n"
+
+[help_usage]
+other = "Для загрузки видео отправьте ссылку на страницу с видео (например, d3.ru).\n\n"
+
+[help_domains]
+other = "Поддерживаемые домены:\n"
+
+[help_admin]
+other = "<b>👮 Админ команды:</b>\n/adduser &lt;id&gt; - Добавить пользователя в whitelist\n/removeuser &lt;id&gt; - Удалить пользователя из whitelist\n/adddomain &lt;domain&gt; - Добавить домен\n/removedomain &lt;domain&gt; - Удалить домен\n/listdomains - Показать все домены в whitelist"
+
+[no_active_downloads]
+other = "📋 У вас нет активных загрузок."
+
+[no_active_downloads_to_stop]
+other = "📋 У вас нет активных загрузок для остановки."
+
+[stop_failed]
+other = "❌ Не удалось остановить загрузку: {{.Error}}"
+
+[download_stopped]
+other = "⏹ Загрузка остановлена и файл удалён."
+
+[stop_failed_generic]
+other = "❌ Не удалось остановить загрузку."
+
+[active_download_exists]
+other = "⚠️ У вас уже есть активная загрузка:\n\n{{.Status}}"
+
+[domain_not_whitelisted]
+other = "❌ Этот домен не находится в белом списке."
+
+[create_task_failed]
+other = "❌ Не удалось создать задачу загрузки. Попробуйте позже."
+
+[starting_download]
+other = "🚀 Начинаю загрузку с {{.URL}}\n\nСтатус: {{.Status}}"
+
+[no_domains_available]
+other = "Нет доступных доменов"
+
+[status_pending]
+other = "Ожидание"
+
+[status_downloading]
+other = "Скачивание"
+
+[status_sending]
+other = "Отправка"
+
+[status_completed]
+other = "Завершено"
+
+[status_failed]
+other = "Ошибка"
+
+[status_stopped]
+other = "Остановлено"
+
+[status_error]
+other = "Ошибка"
+
+[progress]
+other = "📊 Прогресс: {{.Progress}}%"
+
+[downloaded]
+other = "💾 Скачано: {{.Downloaded}} / {{.Total}} МБ"
+
+[insufficient_disk_space]
+other = "❌ Недостаточно места на диске для загрузки этого файла."
+
+[video_ready]
+other = "🎬 Ваше видео готово!"
+
+[download_success]
+other = "✅ Видео успешно загружено и отправлено!"
+
+[download_error]
+other = "❌ Ошибка загрузки: {{.Error}}"

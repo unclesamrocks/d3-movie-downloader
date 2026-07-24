@@ -1,0 +1,131 @@
+[not_whitelisted]
+other = "❌ You are not in the whitelist. Contact an administrator. (Your Telegram ID: {{.UserID}})"
+
+[send_url_or_help]
+other = "❓ Send a video link or use the /help command."
+
+[no_permission]
+other = "❌ You don't have permission to run this command."
+
+[unknown_command]
+other = "❓ Unknown command. Use /help for reference."
+
+[adduser_usage]
+other = "❌ Usage: /adduser &lt;telegram_user_id&gt;"
+
+[removeuser_usage]
+other = "❌ Usage: /removeuser &lt;telegram_user_id&gt;"
+
+[adddomain_usage]
+other = "❌ Usage: /adddomain &lt;domain&gt;"
+
+[removedomain_usage]
+other = "❌ Usage: /removedomain &lt;domain&gt;"
+
+[invalid_user_id]
+other = "❌ Invalid user ID"
+
+[error]
+other = "❌ Error: {{.Error}}"
+
+[user_added]
+other = "✅ User {{.UserID}} added to whitelist"
+
+[user_removed]
+other = "✅ User {{.UserID}} removed from whitelist"
+
+[domain_added]
+other = "✅ Domain {{.Domain}} added to whitelist"
+
+[domain_removed]
+other = "✅ Domain {{.Domain}} removed from whitelist"
+
+[no_domains]
+other = "📋 No domains in whitelist."
+
+[domain_list]
+other = "📋 Domains in whitelist:\n\n{{.List}}"
+
+[help_header]
+other = "🎬 <b>D3 Movie Downloader Bot</b>\n\n"
+
+[help_commands]
+other = "Available commands:\n/status - Check current download status\n/stop - Stop current download\n\n"
+
+[help_usage]
+other = "To download a video, send a link to a video page (e.g. d3.ru).\n\n"
+
+[help_domains]
+other = "Supported domains:\n"
+
+[help_admin]
+other = "<b>👮 Admin commands:</b>\n/adduser &lt;id&gt; - Add user to whitelist\n/removeuser &lt;id&gt; - Remove user from whitelist\n/adddomain &lt;domain&gt; - Add domain\n/removedomain &lt;domain&gt; - Remove domain\n/listdomains - Show all whitelisted domains"
+
+[no_active_downloads]
+other = "📋 You have no active downloads."
+
+[no_active_downloads_to_stop]
+other = "📋 You have no active downloads to stop."
+
+[stop_failed]
+other = "❌ Failed to stop download: {{.Error}}"
+
+[download_stopped]
+other = "⏹ Download stopped and file deleted."
+
+[stop_failed_generic]
+other = "❌ Failed to stop download."
+
+[active_download_exists]
+other = "⚠️ You already have an active download:\n\n{{.Status}}"
+
+[domain_not_whitelisted]
+other = "❌ This domain is not in the whitelist."
+
+[create_task_failed]
+other = "❌ Failed to create download task. Try again later."
+
+[starting_download]
+other = "🚀 Starting download from {{.URL}}\n\nStatus: {{.Status}}"
+
+[no_domains_available]
+other = "No domains available"
+
+[status_pending]
+other = "Pending"
+
+[status_downloading]
+other = "Downloading"
+
+[status_sending]
+other = "Sending"
+
+[status_completed]
+other = "Completed"
+
+[status_failed]
+other = "Failed"
+
+[status_stopped]
+other = "Stopped"
+
+[status_error]
+other = "Error"
+
+[progress]
+other = "📊 Progress: {{.Progress}}%"
+
+[downloaded]
+other = "💾 Downloaded: {{.Downloaded}} / {{.Total}} MB"
+
+[insufficient_disk_space]
+other = "❌ Insufficient disk space to download this file."
+
+[video_ready]
+other = "🎬 Your video is ready!"
+
+[download_success]
+other = "✅ Video downloaded and sent successfully!"
+
+[download_error]
+other = "❌ Download error: {{.Error}}"

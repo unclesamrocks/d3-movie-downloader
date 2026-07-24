@@ -10,6 +10,7 @@ import (
 	"d3-movie-downloader/internal/db"
 	"d3-movie-downloader/internal/downloader"
 	"d3-movie-downloader/internal/handler"
+	"d3-movie-downloader/internal/i18n"
 	"d3-movie-downloader/internal/messenger"
 	"d3-movie-downloader/internal/server"
 )
@@ -58,12 +59,19 @@ func (b *Bot) Start() error {
 	b.messenger = messenger.NewTelegramAdapter(cfg.Telegram.BotToken)
 	fmt.Println("✅ Telegram adapter initialized")
 
+	// Initialize i18n localizer
+	localizer, err := i18n.NewLocalizer()
+	if err != nil {
+		return fmt.Errorf("failed to initialize i18n: %w", err)
+	}
+	fmt.Println("✅ i18n localizer initialized")
+
 	// Initialize download manager
-	b.downloadManager = downloader.NewDownloadManager(b.messenger, cfg.Limits.MaxConcurrentDownloads, cfg.TempDir)
+	b.downloadManager = downloader.NewDownloadManager(b.messenger, localizer, cfg.Limits.MaxConcurrentDownloads, cfg.TempDir)
 	fmt.Println("✅ Download manager initialized")
 
 	// Initialize command handler
-	b.commandHandler = handler.NewCommandHandler(b.downloadManager, b.database, b.messenger)
+	b.commandHandler = handler.NewCommandHandler(b.downloadManager, b.database, b.messenger, localizer)
 	fmt.Println("✅ Command handler initialized")
 
 	// Set up webhook or polling based on environment
