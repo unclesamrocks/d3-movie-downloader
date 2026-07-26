@@ -3,6 +3,7 @@ package handler
 import (
 	"fmt"
 	"net/url"
+	"runtime"
 	"strconv"
 	"strings"
 
@@ -66,6 +67,7 @@ func (h *CommandHandler) handleCommand(msg messenger.IncomingMessage) {
 		"/adddomain":    true,
 		"/removedomain": true,
 		"/listdomains":  true,
+		"/mem":          true,
 	}
 
 	userIDInt, _ := strconv.ParseInt(msg.UserID, 10, 64)
@@ -113,6 +115,8 @@ func (h *CommandHandler) handleAdminCommand(msg messenger.IncomingMessage, comma
 		h.handleRemoveDomain(msg, args)
 	case "/listdomains":
 		h.handleListDomains(msg)
+	case "/mem":
+		h.handleMem(msg)
 	}
 }
 
@@ -197,6 +201,28 @@ func (h *CommandHandler) handleListDomains(msg messenger.IncomingMessage) {
 	}
 
 	h.messenger.SendText(msg.UserID, h.localizer.Localize(msg.Language, "domain_list", map[string]any{"List": strings.TrimSpace(domainList.String())}))
+}
+
+// handleMem returns current memory usage of the process
+func (h *CommandHandler) handleMem(msg messenger.IncomingMessage) {
+	var m runtime.MemStats
+	runtime.ReadMemStats(&m)
+
+	Alloc := float64(m.Alloc) / (1024 * 1024)
+	TotalAlloc := float64(m.TotalAlloc) / (1024 * 1024)
+	Sys := float64(m.Sys) / (1024 * 1024)
+	NumGC := m.NumGC
+
+	text := h.localizer.Localize(msg.Language, "mem_usage", map[string]any{
+		"Alloc":        fmt.Sprintf("%.2f", Alloc),
+		"TotalAlloc":   fmt.Sprintf("%.2f", TotalAlloc),
+		"Sys":          fmt.Sprintf("%.2f", Sys),
+		"NumGC":        NumGC,
+		"NumCPU":       runtime.NumCPU(),
+		"NumGoroutine": runtime.NumGoroutine(),
+	})
+
+	h.messenger.SendText(msg.UserID, text)
 }
 
 // handleHelp shows help text

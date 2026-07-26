@@ -59,7 +59,7 @@ other = "Для загрузки видео отправьте ссылку на
 other = "Поддерживаемые домены:\n"
 
 [help_admin]
-other = "<b>👮 Админ команды:</b>\n/adduser &lt;id&gt; - Добавить пользователя в whitelist\n/removeuser &lt;id&gt; - Удалить пользователя из whitelist\n/adddomain &lt;domain&gt; - Добавить домен\n/removedomain &lt;domain&gt; - Удалить домен\n/listdomains - Показать все домены в whitelist"
+other = "<b>👮 Админ команды:</b>\n/adduser &lt;id&gt; - Добавить пользователя в whitelist\n/removeuser &lt;id&gt; - Удалить пользователя из whitelist\n/adddomain &lt;domain&gt; - Добавить домен\n/removedomain &lt;domain&gt; - Удалить домен\n/listdomains - Показать все домены в whitelist\n/mem - Показать использование памяти"
 
 [no_active_downloads]
 other = "📋 У вас нет активных загрузок."
@@ -129,3 +129,6 @@ other = "✅ Видео успешно загружено и отправлен�
 
 [download_error]
 other = "❌ Ошибка загрузки: {{.Error}}"
+
+[mem_usage]
+other = "🧠 <b>Использование памяти:</b>\n\nAlloc (текущее): {{.Alloc}} МБ\nTotalAlloc (за всё время): {{.TotalAlloc}} МБ\nSys (от ОС): {{.Sys}} МБ\nЦиклов GC: {{.NumGC}}\nCPU: {{.NumCPU}}\nГорутины: {{.NumGoroutine}}"

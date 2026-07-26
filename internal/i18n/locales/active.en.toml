@@ -59,7 +59,7 @@ other = "To download a video, send a link to a video page (e.g. d3.ru).\n\n"
 other = "Supported domains:\n"
 
 [help_admin]
-other = "<b>👮 Admin commands:</b>\n/adduser &lt;id&gt; - Add user to whitelist\n/removeuser &lt;id&gt; - Remove user from whitelist\n/adddomain &lt;domain&gt; - Add domain\n/removedomain &lt;domain&gt; - Remove domain\n/listdomains - Show all whitelisted domains"
+other = "<b>👮 Admin commands:</b>\n/adduser &lt;id&gt; - Add user to whitelist\n/removeuser &lt;id&gt; - Remove user from whitelist\n/adddomain &lt;domain&gt; - Add domain\n/removedomain &lt;domain&gt; - Remove domain\n/listdomains - Show all whitelisted domains\n/mem - Show memory usage"
 
 [no_active_downloads]
 other = "📋 You have no active downloads."
@@ -129,3 +129,6 @@ other = "✅ Video downloaded and sent successfully!"
 
 [download_error]
 other = "❌ Download error: {{.Error}}"
+
+[mem_usage]
+other = "🧠 <b>Memory usage:</b>\n\nAlloc (current): {{.Alloc}} MB\nTotalAlloc (lifetime): {{.TotalAlloc}} MB\nSys (from OS): {{.Sys}} MB\nGC cycles: {{.NumGC}}\nCPUs: {{.NumCPU}}\nGoroutines: {{.NumGoroutine}}"
