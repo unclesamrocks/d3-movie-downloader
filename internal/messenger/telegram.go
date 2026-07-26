@@ -141,8 +141,9 @@ func (t *TelegramAdapter) SendText(userID string, text string) error {
 	})
 	if err != nil {
 		fmt.Printf("Failed to send text to user %s: %v\n", userID, err)
+		return fmt.Errorf("failed to send text message (sendMessage)")
 	}
-	return err
+	return nil
 }
 
 // SendFile sends a video file via Telegram Bot API
@@ -202,25 +203,25 @@ func (t *TelegramAdapter) SendFile(ctx context.Context, userID string, filePath 
 	// Send request
 	req, err := http.NewRequestWithContext(ctx, "POST", fmt.Sprintf("%s/sendVideo", t.apiURL), &buf)
 	if err != nil {
-		err = fmt.Errorf("failed to create request: %w", err)
-		fmt.Printf("Failed to send file to user %s: %v\n", userID, err)
-		return err
+		fullErr := fmt.Errorf("failed to create request: %w", err)
+		fmt.Printf("Failed to send file to user %s: %v\n", userID, fullErr)
+		return fmt.Errorf("failed to create request (sendVideo)")
 	}
 	req.Header.Set("Content-Type", writer.FormDataContentType())
 
 	resp, err := t.client.Do(req)
 	if err != nil {
-		err = fmt.Errorf("failed to send file: %w", err)
-		fmt.Printf("Failed to send file to user %s: %v\n", userID, err)
-		return err
+		fullErr := fmt.Errorf("failed to send file: %w", err)
+		fmt.Printf("Failed to send file to user %s: %v\n", userID, fullErr)
+		return fmt.Errorf("failed to send file (sendVideo)")
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
 		body, _ := io.ReadAll(resp.Body)
-		err = fmt.Errorf("telegram API error: %d %s", resp.StatusCode, string(body))
-		fmt.Printf("Failed to send file to user %s: %v\n", userID, err)
-		return err
+		fullErr := fmt.Errorf("telegram API error: %d %s", resp.StatusCode, string(body))
+		fmt.Printf("Failed to send file to user %s: %v\n", userID, fullErr)
+		return fmt.Errorf("telegram API error %d (sendVideo)", resp.StatusCode)
 	}
 
 	return nil
