@@ -1,3 +1,11 @@
 node_modules
 dist
 .env
+data
+
+# Allow tracking binaries in bin/
+!bin/
+bin/*
+!bin/.gitkeep
+!bin/d3-movie-downloader
+!bin/adduser

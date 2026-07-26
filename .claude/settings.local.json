@@ -3,7 +3,42 @@
     "allow": [
       "Bash(npm run *)",
       "WebFetch(domain:core.telegram.org)",
-      "Bash(npx tsc *)"
+      "Bash(npx tsc *)",
+      "Bash(go build *)",
+      "Bash(go vet *)",
+      "Bash(go version *)",
+      "Bash(make build *)",
+      "Bash(./bin/d3-movie-downloader --help)",
+      "Bash(pkill -f d3-movie-downloader)",
+      "Bash(go get *)",
+      "Bash(go mod *)"
     ]
-  }
+  },
+  "deny": [
+    "git add",
+    "git commit",
+    "git push",
+    "git pull",
+    "git fetch",
+    "git branch",
+    "git checkout",
+    "git merge",
+    "git rebase",
+    "git reset",
+    "git revert",
+    "git stash",
+    "git tag",
+    "git log",
+    "git status",
+    "git diff",
+    "git show",
+    "git remote",
+    "git clone",
+    "git init",
+    "git rm",
+    "git mv",
+    "git config",
+    "git submodule",
+    "git worktree"
+  ]
 }
