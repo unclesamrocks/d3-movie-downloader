@@ -134,9 +134,10 @@ func (t *TelegramAdapter) parseUpdates(updates []telegramUpdate) []IncomingMessa
 // SendText sends a text message via Telegram Bot API
 func (t *TelegramAdapter) SendText(userID string, text string) error {
 	err := t.makeRequest("sendMessage", map[string]any{
-		"chat_id":    userID,
-		"text":       text,
-		"parse_mode": "HTML",
+		"chat_id":                  userID,
+		"text":                     text,
+		"parse_mode":               "HTML",
+		"disable_web_page_preview": true,
 	})
 	if err != nil {
 		fmt.Printf("Failed to send text to user %s: %v\n", userID, err)
