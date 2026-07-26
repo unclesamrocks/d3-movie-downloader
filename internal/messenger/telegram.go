@@ -146,7 +146,7 @@ func (t *TelegramAdapter) SendText(userID string, text string) error {
 }
 
 // SendFile sends a video file via Telegram Bot API
-func (t *TelegramAdapter) SendFile(userID string, filePath string, caption string, width int, height int) error {
+func (t *TelegramAdapter) SendFile(ctx context.Context, userID string, filePath string, caption string, width int, height int) error {
 	file, err := os.Open(filePath)
 	if err != nil {
 		return fmt.Errorf("failed to open file: %w", err)
@@ -200,7 +200,7 @@ func (t *TelegramAdapter) SendFile(userID string, filePath string, caption strin
 	}
 
 	// Send request
-	req, err := http.NewRequest("POST", fmt.Sprintf("%s/sendVideo", t.apiURL), &buf)
+	req, err := http.NewRequestWithContext(ctx, "POST", fmt.Sprintf("%s/sendVideo", t.apiURL), &buf)
 	if err != nil {
 		err = fmt.Errorf("failed to create request: %w", err)
 		fmt.Printf("Failed to send file to user %s: %v\n", userID, err)

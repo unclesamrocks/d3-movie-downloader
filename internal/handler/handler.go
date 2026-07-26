@@ -267,16 +267,9 @@ func (h *CommandHandler) handleStop(msg messenger.IncomingMessage) {
 		return
 	}
 
-	stopped, err := h.downloadManager.StopTask(msg.UserID)
+	_, err := h.downloadManager.StopTask(msg.UserID)
 	if err != nil {
 		h.messenger.SendText(msg.UserID, h.localizer.Localize(msg.Language, "stop_failed", map[string]any{"Error": err.Error()}))
-		return
-	}
-
-	if stopped {
-		h.messenger.SendText(msg.UserID, h.localizer.Localize(msg.Language, "download_stopped", nil))
-	} else {
-		h.messenger.SendText(msg.UserID, h.localizer.Localize(msg.Language, "stop_failed_generic", nil))
 	}
 }
 

@@ -73,9 +73,6 @@ other = "❌ Не удалось остановить загрузку: {{.Error
 [download_stopped]
 other = "⏹ Загрузка остановлена и файл удалён."
 
-[stop_failed_generic]
-other = "❌ Не удалось остановить загрузку."
-
 [active_download_exists]
 other = "⚠️ У вас уже есть активная загрузка:\n\n{{.Status}}"
 
@@ -129,6 +126,9 @@ other = "✅ Видео успешно загружено и отправлен�
 
 [download_error]
 other = "❌ Ошибка загрузки: {{.Error}}"
+
+[download_cancelled]
+other = "⏹ Загрузка отменена."
 
 [mem_usage]
 other = "🧠 <b>Использование памяти:</b>\n\nAlloc (текущее): {{.Alloc}} МБ\nTotalAlloc (за всё время): {{.TotalAlloc}} МБ\nSys (от ОС): {{.Sys}} МБ\nЦиклов GC: {{.NumGC}}\nCPU: {{.NumCPU}}\nГорутины: {{.NumGoroutine}}"

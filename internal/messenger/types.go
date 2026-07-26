@@ -1,6 +1,9 @@
 package messenger
 
-import "time"
+import (
+	"context"
+	"time"
+)
 
 // IncomingMessage represents a message received from a messenger
 type IncomingMessage struct {
@@ -21,7 +24,7 @@ type MessengerAdapter interface {
 	SendText(userID string, text string) error
 
 	// SendFile sends a file to a user
-	SendFile(userID string, filePath string, caption string, width int, height int) error
+	SendFile(ctx context.Context, userID string, filePath string, caption string, width int, height int) error
 
 	// SetWebhook sets the webhook URL (optional)
 	SetWebhook(url string) error

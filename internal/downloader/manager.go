@@ -1,6 +1,7 @@
 package downloader
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"net/http"
@@ -44,6 +45,8 @@ type DownloadTask struct {
 	StartedAt       *time.Time
 	CompletedAt     *time.Time
 	Error           string
+	ctx             context.Context
+	cancel          context.CancelFunc
 }
 
 // DownloadManager manages download queue with per-user limits and global concurrency
@@ -109,6 +112,7 @@ func (dm *DownloadManager) CreateTask(userID string, url string, lang string) (*
 		Language:  lang,
 		CreatedAt: time.Now(),
 	}
+	task.ctx, task.cancel = context.WithTimeout(context.Background(), 5*time.Minute)
 
 	dm.tasks[taskID] = task
 	dm.userTasks[userID] = taskID
@@ -153,6 +157,9 @@ func (dm *DownloadManager) StopTask(userID string) (bool, error) {
 		dm.mu.Unlock()
 		return false, nil
 	}
+
+	// Cancel context to abort in-flight work
+	task.cancel()
 
 	// Mark as stopped
 	task.Status = StatusStopped
@@ -251,7 +258,7 @@ func (dm *DownloadManager) processTask(taskID string) {
 	task.Status = StatusDownloading
 	dm.mu.Unlock()
 
-	extractionResult, err := dm.extractVideoUrl(task.URL)
+	extractionResult, err := dm.extractVideoUrl(task.ctx, task.URL)
 	if err != nil {
 		dm.handleTaskError(task, err)
 		return
@@ -267,7 +274,7 @@ func (dm *DownloadManager) processTask(taskID string) {
 	dm.mu.Unlock()
 
 	// Step 2: Check disk space
-	fileSize, err := dm.getFileSize(extractionResult.VideoURL)
+	fileSize, err := dm.getFileSize(task.ctx, extractionResult.VideoURL)
 	if err != nil {
 		dm.handleTaskError(task, err)
 		return
@@ -308,19 +315,22 @@ func (dm *DownloadManager) processTask(taskID string) {
 	task.FilePath = filePath
 	dm.mu.Unlock()
 
-	if err := dm.downloadVideo(extractionResult.VideoURL, filePath, task); err != nil {
+	if err := dm.downloadVideo(task.ctx, extractionResult.VideoURL, filePath, task); err != nil {
 		dm.handleTaskError(task, err)
 		return
 	}
 
 	// Step 4: Send file to user
+	if task.ctx.Err() != nil {
+		dm.handleTaskError(task, task.ctx.Err())
+		return
+	}
+
 	dm.mu.Lock()
 	task.Status = StatusSending
 	dm.mu.Unlock()
 
-	if err := dm.messenger.SendFile(task.UserID, filePath, dm.localizer.Localize(task.Language, "video_ready", nil), task.Width, task.Height); err != nil {
-		// Clean up file on send failure
-		os.Remove(filePath)
+	if err := dm.messenger.SendFile(task.ctx, task.UserID, filePath, dm.localizer.Localize(task.Language, "video_ready", nil), task.Width, task.Height); err != nil {
 		dm.handleTaskError(task, fmt.Errorf("failed to send file: %w", err))
 		return
 	}
@@ -351,13 +361,19 @@ func (dm *DownloadManager) handleTaskError(task *DownloadTask, err error) {
 	task.CompletedAt = &now
 	dm.mu.Unlock()
 
+	// Send cancellation confirmation instead of error if context was cancelled
+	if task.ctx.Err() != nil {
+		dm.messenger.SendText(task.UserID, dm.localizer.Localize(task.Language, "download_cancelled", nil))
+		return
+	}
+
 	fmt.Printf("Download error: %v\n", err)
 	dm.messenger.SendText(task.UserID, dm.localizer.Localize(task.Language, "download_error", map[string]any{"Error": err.Error()}))
 }
 
 // extractVideoUrl fetches HTML and extracts video URL
-func (dm *DownloadManager) extractVideoUrl(pageURL string) (*parser.VideoExtractionResult, error) {
-	req, err := http.NewRequest("GET", pageURL, nil)
+func (dm *DownloadManager) extractVideoUrl(ctx context.Context, pageURL string) (*parser.VideoExtractionResult, error) {
+	req, err := http.NewRequestWithContext(ctx, "GET", pageURL, nil)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create request: %w", err)
 	}
@@ -382,8 +398,8 @@ func (dm *DownloadManager) extractVideoUrl(pageURL string) (*parser.VideoExtract
 }
 
 // getFileSize gets file size from URL headers
-func (dm *DownloadManager) getFileSize(url string) (int64, error) {
-	req, err := http.NewRequest("HEAD", url, nil)
+func (dm *DownloadManager) getFileSize(ctx context.Context, url string) (int64, error) {
+	req, err := http.NewRequestWithContext(ctx, "HEAD", url, nil)
 	if err != nil {
 		return 0, fmt.Errorf("failed to create request: %w", err)
 	}
@@ -431,8 +447,8 @@ func (dm *DownloadManager) checkDiskSpace(fileSize int64) (bool, error) {
 }
 
 // downloadVideo downloads a video file with progress tracking
-func (dm *DownloadManager) downloadVideo(url string, filePath string, task *DownloadTask) error {
-	req, err := http.NewRequest("GET", url, nil)
+func (dm *DownloadManager) downloadVideo(ctx context.Context, url string, filePath string, task *DownloadTask) error {
+	req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
 	if err != nil {
 		return fmt.Errorf("failed to create request: %w", err)
 	}
@@ -464,6 +480,12 @@ func (dm *DownloadManager) downloadVideo(url string, filePath string, task *Down
 	buf := make([]byte, 32*1024) // 32KB buffer
 
 	for {
+		select {
+		case <-ctx.Done():
+			return ctx.Err()
+		default:
+		}
+
 		n, readErr := resp.Body.Read(buf)
 		if n > 0 {
 			if _, err := file.Write(buf[:n]); err != nil {
