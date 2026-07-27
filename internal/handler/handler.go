@@ -334,32 +334,13 @@ func (h *CommandHandler) getDomainList(lang string) string {
 
 // formatTaskStatus formats task status for display
 func (h *CommandHandler) formatTaskStatus(task *downloader.DownloadTask, lang string) string {
-	statusEmojis := map[string]string{
-		"pending":     "⏳",
-		"downloading": "📥",
-		"sending":     "📤",
-		"completed":   "✅",
-		"failed":      "❌",
-		"stopped":     "⏹",
-	}
-
-	statusKeys := map[string]string{
-		"pending":     "status_pending",
-		"downloading": "status_downloading",
-		"sending":     "status_sending",
-		"completed":   "status_completed",
-		"failed":      "status_failed",
-		"stopped":     "status_stopped",
-	}
-
-	emoji := statusEmojis[string(task.Status)]
+	emoji := downloader.StatusEmoji[task.Status]
 	if emoji == "" {
 		emoji = "❓"
 	}
 
-	statusKey := statusKeys[string(task.Status)]
 	statusName := string(task.Status)
-	if statusKey != "" {
+	if statusKey := downloader.StatusI18nKey[task.Status]; statusKey != "" {
 		statusName = h.localizer.Localize(lang, statusKey, nil)
 	}
 

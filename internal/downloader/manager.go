@@ -28,6 +28,26 @@ const (
 	StatusStopped     DownloadStatus = "stopped"
 )
 
+// StatusEmoji maps each DownloadStatus to its display emoji
+var StatusEmoji = map[DownloadStatus]string{
+	StatusPending:     "⏳",
+	StatusDownloading: "📥",
+	StatusSending:     "📤",
+	StatusCompleted:   "✅",
+	StatusFailed:      "❌",
+	StatusStopped:     "⏹",
+}
+
+// StatusI18nKey maps each DownloadStatus to its i18n localization key
+var StatusI18nKey = map[DownloadStatus]string{
+	StatusPending:     "status_pending",
+	StatusDownloading: "status_downloading",
+	StatusSending:     "status_sending",
+	StatusCompleted:   "status_completed",
+	StatusFailed:      "status_failed",
+	StatusStopped:     "status_stopped",
+}
+
 // DownloadTask represents a single download task
 type DownloadTask struct {
 	ID              string
