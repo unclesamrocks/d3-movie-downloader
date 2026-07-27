@@ -11,7 +11,8 @@
       "Bash(./bin/d3-movie-downloader --help)",
       "Bash(pkill -f d3-movie-downloader)",
       "Bash(go get *)",
-      "Bash(go mod *)"
+      "Bash(go mod *)",
+      "Bash(go test *)"
     ]
   },
   "deny": [
