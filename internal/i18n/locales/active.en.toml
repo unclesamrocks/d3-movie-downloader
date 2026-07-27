@@ -132,3 +132,33 @@ other = "⏹ Download cancelled."
 
 [mem_usage]
 other = "🧠 <b>Memory usage:</b>\n\nAlloc (current): {{.Alloc}} MB\nTotalAlloc (lifetime): {{.TotalAlloc}} MB\nSys (from OS): {{.Sys}} MB\nGC cycles: {{.NumGC}}\nCPUs: {{.NumCPU}}\nGoroutines: {{.NumGoroutine}}"
+
+[cmd_start]
+other = "Start working with the bot"
+
+[cmd_help]
+other = "Show help"
+
+[cmd_status]
+other = "Current download status"
+
+[cmd_stop]
+other = "Stop download"
+
+[cmd_adduser]
+other = "Add user to whitelist"
+
+[cmd_removeuser]
+other = "Remove user from whitelist"
+
+[cmd_adddomain]
+other = "Add domain to whitelist"
+
+[cmd_removedomain]
+other = "Remove domain from whitelist"
+
+[cmd_listdomains]
+other = "Show all domains"
+
+[cmd_mem]
+other = "Memory usage"

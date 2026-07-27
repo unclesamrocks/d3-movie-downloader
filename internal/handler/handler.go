@@ -19,16 +19,64 @@ type CommandHandler struct {
 	db              *db.Database
 	messenger       messenger.MessengerAdapter
 	localizer       *i18n.Localizer
+	commands        []commandDef
 }
 
-// NewCommandHandler creates a new command handler
+// commandDef is the single source of truth for a bot command:
+// its name, description key, whether it's admin-only, and its handler.
+type commandDef struct {
+	Command     string                                             // e.g. "start"
+	Description string                                             // i18n key for "/" menu
+	Admin       bool                                               // requires admin privileges
+	Handler     func(msg messenger.IncomingMessage, args []string) // handler function
+}
+
+// NewCommandHandler creates a new command handler and registers all commands.
 func NewCommandHandler(dm *downloader.DownloadManager, database *db.Database, m messenger.MessengerAdapter, l *i18n.Localizer) *CommandHandler {
-	return &CommandHandler{
+	h := &CommandHandler{
 		downloadManager: dm,
 		db:              database,
 		messenger:       m,
 		localizer:       l,
 	}
+	h.commands = h.buildCommandTable()
+	return h
+}
+
+// buildCommandTable defines all commands in one place.
+// To add a new command: add an entry here and implement the handler method.
+func (h *CommandHandler) buildCommandTable() []commandDef {
+	return []commandDef{
+		// User commands
+		{Command: "start", Description: "cmd_start", Handler: h.handleHelp},
+		{Command: "help", Description: "cmd_help", Handler: h.handleHelp},
+		{Command: "status", Description: "cmd_status", Handler: h.handleStatus},
+		{Command: "stop", Description: "cmd_stop", Handler: h.handleStop},
+
+		// Admin commands
+		{Command: "adduser", Description: "cmd_adduser", Admin: true, Handler: h.handleAddUser},
+		{Command: "removeuser", Description: "cmd_removeuser", Admin: true, Handler: h.handleRemoveUser},
+		{Command: "adddomain", Description: "cmd_adddomain", Admin: true, Handler: h.handleAddDomain},
+		{Command: "removedomain", Description: "cmd_removedomain", Admin: true, Handler: h.handleRemoveDomain},
+		{Command: "listdomains", Description: "cmd_listdomains", Admin: true, Handler: h.handleListDomains},
+		{Command: "mem", Description: "cmd_mem", Admin: true, Handler: h.handleMem},
+	}
+}
+
+// Commands returns the list of user-facing bot commands for the "/" menu.
+func (h *CommandHandler) Commands() []messenger.BotCommand {
+	lang := "ru"
+	var cmds []messenger.BotCommand
+	for _, c := range h.commands {
+		if c.Admin {
+			continue // admin commands are not shown in the "/" menu
+		}
+		cmds = append(cmds, messenger.BotCommand{
+			Command:     c.Command,
+			Description: h.localizer.Localize(lang, c.Description, nil),
+		})
+	}
+	return cmds
 }
 
 // HandleMessage processes an incoming message
@@ -56,68 +104,30 @@ func (h *CommandHandler) HandleMessage(msg messenger.IncomingMessage) {
 	h.messenger.SendText(msg.UserID, h.localizer.Localize(msg.Language, "send_url_or_help", nil))
 }
 
-// handleCommand routes commands to appropriate handlers
+// handleCommand routes commands using the command table
 func (h *CommandHandler) handleCommand(msg messenger.IncomingMessage) {
-	command := strings.ToLower(strings.Split(msg.Text, " ")[0])
+	parts := strings.Fields(msg.Text)
+	command := strings.TrimPrefix(strings.ToLower(parts[0]), "/")
+	args := parts[1:]
 
-	// Admin commands
-	adminCommands := map[string]bool{
-		"/adduser":      true,
-		"/removeuser":   true,
-		"/adddomain":    true,
-		"/removedomain": true,
-		"/listdomains":  true,
-		"/mem":          true,
-	}
-
-	userIDInt, _ := strconv.ParseInt(msg.UserID, 10, 64)
-	isAdmin := h.db.IsAdminWhitelisted(userIDInt)
-
-	if adminCommands[command] {
-		if !isAdmin {
-			h.messenger.SendText(msg.UserID, h.localizer.Localize(msg.Language, "no_permission", nil))
-			return
+	for _, c := range h.commands {
+		if c.Command != command {
+			continue
 		}
-		h.handleAdminCommand(msg, command)
+
+		if c.Admin {
+			userIDInt, _ := strconv.ParseInt(msg.UserID, 10, 64)
+			if !h.db.IsAdminWhitelisted(userIDInt) {
+				h.messenger.SendText(msg.UserID, h.localizer.Localize(msg.Language, "no_permission", nil))
+				return
+			}
+		}
+
+		c.Handler(msg, args)
 		return
 	}
 
-	// Regular commands
-	switch command {
-	case "/start", "/help":
-		h.handleHelp(msg)
-	case "/status":
-		h.handleStatus(msg)
-	case "/stop":
-		h.handleStop(msg)
-	default:
-		h.messenger.SendText(msg.UserID, h.localizer.Localize(msg.Language, "unknown_command", nil))
-	}
-}
-
-// handleAdminCommand routes admin commands
-func (h *CommandHandler) handleAdminCommand(msg messenger.IncomingMessage, command string) {
-	args := strings.Split(msg.Text, " ")
-	if len(args) > 1 {
-		args = args[1:]
-	} else {
-		args = []string{}
-	}
-
-	switch command {
-	case "/adduser":
-		h.handleAddUser(msg, args)
-	case "/removeuser":
-		h.handleRemoveUser(msg, args)
-	case "/adddomain":
-		h.handleAddDomain(msg, args)
-	case "/removedomain":
-		h.handleRemoveDomain(msg, args)
-	case "/listdomains":
-		h.handleListDomains(msg)
-	case "/mem":
-		h.handleMem(msg)
-	}
+	h.messenger.SendText(msg.UserID, h.localizer.Localize(msg.Language, "unknown_command", nil))
 }
 
 func (h *CommandHandler) handleAddUser(msg messenger.IncomingMessage, args []string) {
@@ -188,7 +198,7 @@ func (h *CommandHandler) handleRemoveDomain(msg messenger.IncomingMessage, args 
 	h.messenger.SendText(msg.UserID, h.localizer.Localize(msg.Language, "domain_removed", map[string]any{"Domain": args[0]}))
 }
 
-func (h *CommandHandler) handleListDomains(msg messenger.IncomingMessage) {
+func (h *CommandHandler) handleListDomains(msg messenger.IncomingMessage, args []string) {
 	domains := h.db.GetAllWhitelistedDomains()
 	if len(domains) == 0 {
 		h.messenger.SendText(msg.UserID, h.localizer.Localize(msg.Language, "no_domains", nil))
@@ -204,7 +214,7 @@ func (h *CommandHandler) handleListDomains(msg messenger.IncomingMessage) {
 }
 
 // handleMem returns current memory usage of the process
-func (h *CommandHandler) handleMem(msg messenger.IncomingMessage) {
+func (h *CommandHandler) handleMem(msg messenger.IncomingMessage, args []string) {
 	var m runtime.MemStats
 	runtime.ReadMemStats(&m)
 
@@ -226,7 +236,7 @@ func (h *CommandHandler) handleMem(msg messenger.IncomingMessage) {
 }
 
 // handleHelp shows help text
-func (h *CommandHandler) handleHelp(msg messenger.IncomingMessage) {
+func (h *CommandHandler) handleHelp(msg messenger.IncomingMessage, args []string) {
 	userIDInt, _ := strconv.ParseInt(msg.UserID, 10, 64)
 	isAdmin := h.db.IsAdminWhitelisted(userIDInt)
 
@@ -246,7 +256,7 @@ func (h *CommandHandler) handleHelp(msg messenger.IncomingMessage) {
 }
 
 // handleStatus shows the status of the user's current download
-func (h *CommandHandler) handleStatus(msg messenger.IncomingMessage) {
+func (h *CommandHandler) handleStatus(msg messenger.IncomingMessage, args []string) {
 	task := h.downloadManager.GetUserTask(msg.UserID)
 
 	if task == nil {
@@ -259,7 +269,7 @@ func (h *CommandHandler) handleStatus(msg messenger.IncomingMessage) {
 }
 
 // handleStop stops the user's current download
-func (h *CommandHandler) handleStop(msg messenger.IncomingMessage) {
+func (h *CommandHandler) handleStop(msg messenger.IncomingMessage, args []string) {
 	task := h.downloadManager.GetUserTask(msg.UserID)
 
 	if task == nil {

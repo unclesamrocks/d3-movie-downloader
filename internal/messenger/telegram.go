@@ -227,6 +227,23 @@ func (t *TelegramAdapter) SendFile(ctx context.Context, userID string, filePath 
 	return nil
 }
 
+// SetMyCommands registers the bot's command menu with Telegram
+func (t *TelegramAdapter) SetMyCommands(commands []BotCommand) error {
+	type command struct {
+		Command     string `json:"command"`
+		Description string `json:"description"`
+	}
+
+	cmds := make([]command, len(commands))
+	for i, c := range commands {
+		cmds[i] = command{Command: c.Command, Description: c.Description}
+	}
+
+	return t.makeRequest("setMyCommands", map[string]any{
+		"commands": cmds,
+	})
+}
+
 // SetWebhook sets the webhook URL
 func (t *TelegramAdapter) SetWebhook(url string) error {
 	return t.makeRequest("setWebhook", map[string]any{

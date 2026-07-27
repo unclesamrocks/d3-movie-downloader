@@ -34,4 +34,13 @@ type MessengerAdapter interface {
 
 	// StopPolling stops long-polling (optional)
 	StopPolling()
+
+	// SetMyCommands registers the bot's command menu with the messenger
+	SetMyCommands(commands []BotCommand) error
+}
+
+// BotCommand represents a command displayed in the bot's command menu
+type BotCommand struct {
+	Command     string // e.g. "start"
+	Description string // e.g. "Начать работу с ботом"
 }

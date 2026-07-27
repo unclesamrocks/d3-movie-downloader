@@ -132,3 +132,33 @@ other = "⏹ Загрузка отменена."
 
 [mem_usage]
 other = "🧠 <b>Использование памяти:</b>\n\nAlloc (текущее): {{.Alloc}} МБ\nTotalAlloc (за всё время): {{.TotalAlloc}} МБ\nSys (от ОС): {{.Sys}} МБ\nЦиклов GC: {{.NumGC}}\nCPU: {{.NumCPU}}\nГорутины: {{.NumGoroutine}}"
+
+[cmd_start]
+other = "Начать работу с ботом"
+
+[cmd_help]
+other = "Показать справку"
+
+[cmd_status]
+other = "Статус текущей загрузки"
+
+[cmd_stop]
+other = "Остановить загрузку"
+
+[cmd_adduser]
+other = "Добавить пользователя в whitelist"
+
+[cmd_removeuser]
+other = "Удалить пользователя из whitelist"
+
+[cmd_adddomain]
+other = "Добавить домен в whitelist"
+
+[cmd_removedomain]
+other = "Удалить домен из whitelist"
+
+[cmd_listdomains]
+other = "Показать все домены"
+
+[cmd_mem]
+other = "Использование памяти"

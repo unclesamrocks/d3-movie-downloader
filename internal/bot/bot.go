@@ -74,6 +74,13 @@ func (b *Bot) Start() error {
 	b.commandHandler = handler.NewCommandHandler(b.downloadManager, b.database, b.messenger, localizer)
 	fmt.Println("✅ Command handler initialized")
 
+	// Register bot commands for the "/" menu in Telegram
+	if err := b.messenger.SetMyCommands(b.commandHandler.Commands()); err != nil {
+		fmt.Printf("⚠️ Failed to set bot commands: %v\n", err)
+	} else {
+		fmt.Println("✅ Bot commands registered")
+	}
+
 	// Set up webhook or polling based on environment
 	if cfg.Env == "production" && cfg.Telegram.WebhookURL != "" {
 		// Production mode: use webhooks
