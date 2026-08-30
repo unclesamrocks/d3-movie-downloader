@@ -32,6 +32,13 @@ type telegramChat struct {
 	Username  string `json:"username,omitempty"`
 }
 
+type telegramVideo struct {
+	FileID   string `json:"file_id"`
+	Duration int    `json:"duration"`
+	Width    int    `json:"width"`
+	Height   int    `json:"height"`
+}
+
 type telegramMessage struct {
 	MessageID int64           `json:"message_id"`
 	From      *telegramUser   `json:"from,omitempty"`
@@ -39,6 +46,9 @@ type telegramMessage struct {
 	Date      int64           `json:"date"`
 	Text      string          `json:"text,omitempty"`
 	Entities  json.RawMessage `json:"entities,omitempty"`
+	Video     *telegramVideo  `json:"video,omitempty"`
+	Animation *telegramVideo  `json:"animation,omitempty"`  // GIF sent as animation
+	VideoNote *telegramVideo  `json:"video_note,omitempty"` // round video message
 }
 
 type telegramUpdate struct {
@@ -114,7 +124,8 @@ func (t *TelegramAdapter) parseUpdates(updates []telegramUpdate) []IncomingMessa
 		}
 
 		text := msg.Text
-		if text == "" {
+		hasMedia := msg.Video != nil || msg.Animation != nil || msg.VideoNote != nil
+		if text == "" && !hasMedia {
 			continue
 		}
 
@@ -124,6 +135,7 @@ func (t *TelegramAdapter) parseUpdates(updates []telegramUpdate) []IncomingMessa
 			ChatID:     fmt.Sprintf("%d", msg.Chat.ID),
 			Text:       text,
 			Language:   lang,
+			HasMedia:   hasMedia,
 			ReceivedAt: time.Unix(msg.Date, 0),
 		})
 	}
@@ -227,6 +239,22 @@ func (t *TelegramAdapter) SendFile(ctx context.Context, userID string, filePath 
 	return nil
 }
 
+// CopyMessage sends a copy of an existing message via Telegram Bot API.
+// The copy is sent as a new message from the bot — no "Forwarded from" header,
+// so the original sender stays hidden.
+func (t *TelegramAdapter) CopyMessage(fromChatID, messageID string) error {
+	err := t.makeRequest("copyMessage", map[string]any{
+		"chat_id":      fromChatID,
+		"from_chat_id": fromChatID,
+		"message_id":   messageID,
+	})
+	if err != nil {
+		fmt.Printf("Failed to copy message %s from chat %s: %v\n", messageID, fromChatID, err)
+		return fmt.Errorf("failed to copy message (copyMessage)")
+	}
+	return nil
+}
+
 // SetMyCommands registers the bot's command menu with Telegram
 func (t *TelegramAdapter) SetMyCommands(commands []BotCommand) error {
 	type command struct {
@@ -287,34 +315,8 @@ func (t *TelegramAdapter) pollUpdates(ctx context.Context, onMessage func(Incomi
 			offset = newOffset
 		} else {
 			offset = newOffset
-			for _, update := range updates {
-				if update.Message != nil {
-					msg := update.Message
-					userID := msg.Chat.ID
-					lang := "ru"
-					if msg.From != nil {
-						userID = msg.From.ID
-						if msg.From.LanguageCode != "" {
-							lang = msg.From.LanguageCode
-						}
-					}
-
-					text := msg.Text
-					if text == "" {
-						continue
-					}
-
-					incoming := IncomingMessage{
-						MessageID:  fmt.Sprintf("%d", msg.MessageID),
-						UserID:     fmt.Sprintf("%d", userID),
-						ChatID:     fmt.Sprintf("%d", msg.Chat.ID),
-						Text:       text,
-						Language:   lang,
-						ReceivedAt: time.Unix(msg.Date, 0),
-					}
-
-					onMessage(incoming)
-				}
+			for _, incoming := range t.parseUpdates(updates) {
+				onMessage(incoming)
 			}
 		}
 

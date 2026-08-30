@@ -130,6 +130,9 @@ other = "❌ Ошибка загрузки: {{.Error}}"
 [download_cancelled]
 other = "⏹ Загрузка отменена."
 
+[video_copy_failed]
+other = "❌ Не удалось скопировать видео. Попробуйте ещё раз."
+
 [mem_usage]
 other = "🧠 <b>Использование памяти:</b>\n\nAlloc (текущее): {{.Alloc}} МБ\nTotalAlloc (за всё время): {{.TotalAlloc}} МБ\nSys (от ОС): {{.Sys}} МБ\nЦиклов GC: {{.NumGC}}\nCPU: {{.NumCPU}}\nГорутины: {{.NumGoroutine}}"
 

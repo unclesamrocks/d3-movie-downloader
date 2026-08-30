@@ -130,6 +130,9 @@ other = "❌ Download error: {{.Error}}"
 [download_cancelled]
 other = "⏹ Download cancelled."
 
+[video_copy_failed]
+other = "❌ Failed to copy the video. Please try again."
+
 [mem_usage]
 other = "🧠 <b>Memory usage:</b>\n\nAlloc (current): {{.Alloc}} MB\nTotalAlloc (lifetime): {{.TotalAlloc}} MB\nSys (from OS): {{.Sys}} MB\nGC cycles: {{.NumGC}}\nCPUs: {{.NumCPU}}\nGoroutines: {{.NumGoroutine}}"
 

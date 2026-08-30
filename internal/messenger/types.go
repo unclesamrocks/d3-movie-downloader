@@ -12,6 +12,7 @@ type IncomingMessage struct {
 	ChatID     string
 	Text       string
 	Language   string // User's language code (e.g. "ru", "en")
+	HasMedia   bool   // Message contains a video, GIF (animation) or video note
 	ReceivedAt time.Time
 }
 
@@ -25,6 +26,10 @@ type MessengerAdapter interface {
 
 	// SendFile sends a file to a user
 	SendFile(ctx context.Context, userID string, filePath string, caption string, width int, height int) error
+
+	// CopyMessage sends a copy of an existing message as a new message
+	// from the bot (no "Forwarded from" header)
+	CopyMessage(fromChatID, messageID string) error
 
 	// SetWebhook sets the webhook URL (optional)
 	SetWebhook(url string) error

@@ -88,6 +88,16 @@ func (h *CommandHandler) HandleMessage(msg messenger.IncomingMessage) {
 		return
 	}
 
+	// Media (video, GIF, video note) from a whitelisted user: send back a copy
+	// so that when it's forwarded onward the original sender stays hidden
+	// (only the bot is shown)
+	if msg.HasMedia {
+		if err := h.messenger.CopyMessage(msg.ChatID, msg.MessageID); err != nil {
+			h.messenger.SendText(msg.UserID, h.localizer.Localize(msg.Language, "video_copy_failed", nil))
+		}
+		return
+	}
+
 	// Check if it's a command
 	if strings.HasPrefix(msg.Text, "/") {
 		h.handleCommand(msg)
