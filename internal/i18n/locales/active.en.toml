@@ -83,7 +83,7 @@ other = "❌ This domain is not in the whitelist."
 other = "❌ Failed to create download task. Try again later."
 
 [starting_download]
-other = "🚀 Starting download from {{.URL}}\n\nStatus: {{.Status}}"
+other = "🚀 Starting download from \"{{.Title}}\"\n\nStatus: {{.Status}}"
 
 [no_domains_available]
 other = "No domains available"
