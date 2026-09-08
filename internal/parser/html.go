@@ -8,7 +8,6 @@ import (
 
 // VideoExtractionResult holds the extracted video URL and metadata
 type VideoExtractionResult struct {
-	Title   string
 	VideoURL string
 	Width    int
 	Height   int
@@ -44,31 +43,10 @@ type d3PageData struct {
 	Post d3Post `json:"post"`
 }
 
-// ExtractTitle extracts the <title> tag content from HTML
-func ExtractTitle(html string) string {
-	startTag := "<title>"
-	endTag := "</title>"
-
-	startIdx := strings.Index(strings.ToLower(html), startTag)
-	if startIdx == -1 {
-		return ""
-	}
-	startIdx += len(startTag)
-
-	endIdx := strings.Index(strings.ToLower(html[startIdx:]), endTag)
-	if endIdx == -1 {
-		return ""
-	}
-
-	return strings.TrimSpace(html[startIdx : startIdx+endIdx])
-}
-
 // ExtractVideoUrl extracts video URL from d3.ru HTML content
 // d3.ru stores page data in: window.entryStorages[window.pageName] = { ...json... }
 // Video URL is located at: post.data.media.url
 func ExtractVideoUrl(html string) (*VideoExtractionResult, error) {
-	title := ExtractTitle(html)
-
 	// Find the start of JSON data after window.entryStorages[window.pageName] =
 	marker := "window.entryStorages[window.pageName] = "
 	startIndex := strings.Index(html, marker)
@@ -114,7 +92,6 @@ func ExtractVideoUrl(html string) (*VideoExtractionResult, error) {
 	// Try post.data.media.url first
 	if media := pageData.Post.Data.Media; media != nil && IsValidVideoUrl(media.URL) {
 		return &VideoExtractionResult{
-			Title:   title,
 			VideoURL: media.URL,
 			Width:    media.Width,
 			Height:   media.Height,
@@ -124,7 +101,6 @@ func ExtractVideoUrl(html string) (*VideoExtractionResult, error) {
 	// Also try post.data.link.url
 	if link := pageData.Post.Data.Link; link != nil && IsValidVideoUrl(link.URL) {
 		return &VideoExtractionResult{
-			Title:   title,
 			VideoURL: link.URL,
 			Width:    link.Width,
 			Height:   link.Height,

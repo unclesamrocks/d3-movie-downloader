@@ -53,7 +53,6 @@ type DownloadTask struct {
 	ID              string
 	UserID          string
 	URL             string
-	PageTitle       string
 	Status          DownloadStatus
 	Progress        int // 0-100
 	FileSize        int64
@@ -292,9 +291,6 @@ func (dm *DownloadManager) processTask(taskID string) {
 	dm.mu.Lock()
 	task.Width = extractionResult.Width
 	task.Height = extractionResult.Height
-	if extractionResult.Title != "" {
-		task.PageTitle = extractionResult.Title
-	}
 	dm.mu.Unlock()
 
 	// Step 2: Check disk space
@@ -395,38 +391,28 @@ func (dm *DownloadManager) handleTaskError(task *DownloadTask, err error) {
 
 // extractVideoUrl fetches HTML and extracts video URL
 func (dm *DownloadManager) extractVideoUrl(ctx context.Context, pageURL string) (*parser.VideoExtractionResult, error) {
-	html, err := dm.FetchPageHTML(ctx, pageURL)
-	if err != nil {
-		return nil, err
-	}
-
-	return parser.FindVideoUrl(html, pageURL)
-}
-
-// FetchPageHTML fetches the HTML content of a page
-func (dm *DownloadManager) FetchPageHTML(ctx context.Context, pageURL string) (string, error) {
 	req, err := http.NewRequestWithContext(ctx, "GET", pageURL, nil)
 	if err != nil {
-		return "", fmt.Errorf("failed to create request: %w", err)
+		return nil, fmt.Errorf("failed to create request: %w", err)
 	}
 	req.Header.Set("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36")
 
 	resp, err := dm.client.Do(req)
 	if err != nil {
-		return "", fmt.Errorf("failed to fetch page: %w", err)
+		return nil, fmt.Errorf("failed to fetch page: %w", err)
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		return "", fmt.Errorf("failed to fetch page: %d", resp.StatusCode)
+		return nil, fmt.Errorf("failed to fetch page: %d", resp.StatusCode)
 	}
 
 	html, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return "", fmt.Errorf("failed to read response: %w", err)
+		return nil, fmt.Errorf("failed to read response: %w", err)
 	}
 
-	return string(html), nil
+	return parser.FindVideoUrl(string(html), pageURL)
 }
 
 // getFileSize gets file size from URL headers
