@@ -1,19 +1,16 @@
 package handler
 
 import (
-	"context"
 	"fmt"
 	"net/url"
 	"runtime"
 	"strconv"
 	"strings"
-	"time"
 
 	"d3-movie-downloader/internal/db"
 	"d3-movie-downloader/internal/downloader"
 	"d3-movie-downloader/internal/i18n"
 	"d3-movie-downloader/internal/messenger"
-	"d3-movie-downloader/internal/parser"
 )
 
 // CommandHandler processes bot commands and messages
@@ -312,18 +309,6 @@ func (h *CommandHandler) handleUrl(msg messenger.IncomingMessage) {
 		return
 	}
 
-	// Fetch page to extract title before creating task
-	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
-	defer cancel()
-
-	pageTitle := msg.Text
-	html, err := h.downloadManager.FetchPageHTML(ctx, msg.Text)
-	if err == nil {
-		if title := parser.ExtractTitle(html); title != "" {
-			pageTitle = title
-		}
-	}
-
 	// Create download task
 	task, err := h.downloadManager.CreateTask(msg.UserID, msg.Text, msg.Language)
 	if err != nil || task == nil {
@@ -331,7 +316,7 @@ func (h *CommandHandler) handleUrl(msg messenger.IncomingMessage) {
 		return
 	}
 
-	h.messenger.SendText(msg.UserID, h.localizer.Localize(msg.Language, "starting_download", map[string]any{"Title": pageTitle, "Status": h.formatTaskStatus(task, msg.Language)}))
+	h.messenger.SendText(msg.UserID, h.localizer.Localize(msg.Language, "starting_download", map[string]any{"Status": h.formatTaskStatus(task, msg.Language)}))
 }
 
 // isValidUrl checks if text is a valid URL with a scheme and host
