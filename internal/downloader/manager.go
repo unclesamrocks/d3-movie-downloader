@@ -368,8 +368,6 @@ func (dm *DownloadManager) processTask(taskID string) {
 	task.CompletedAt = &now
 	task.Progress = 100
 	dm.mu.Unlock()
-
-	dm.messenger.SendText(task.UserID, dm.localizer.Localize(task.Language, "download_success", nil))
 }
 
 func (dm *DownloadManager) handleTaskError(task *DownloadTask, err error) {

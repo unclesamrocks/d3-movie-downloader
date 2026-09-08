@@ -70,9 +70,6 @@ other = "📋 У вас нет активных загрузок для оста
 [stop_failed]
 other = "❌ Не удалось остановить загрузку: {{.Error}}"
 
-[download_stopped]
-other = "⏹ Загрузка остановлена и файл удалён."
-
 [active_download_exists]
 other = "⚠️ У вас уже есть активная загрузка:\n\n{{.Status}}"
 
@@ -106,9 +103,6 @@ other = "Ошибка"
 [status_stopped]
 other = "Остановлено"
 
-[status_error]
-other = "Ошибка"
-
 [progress]
 other = "📊 Прогресс: {{.Progress}}%"
 
@@ -120,9 +114,6 @@ other = "❌ Недостаточно места на диске для загр
 
 [video_ready]
 other = "🎬 Ваше видео готово!"
-
-[download_success]
-other = "✅ Видео успешно загружено и отправлено!"
 
 [download_error]
 other = "❌ Ошибка загрузки: {{.Error}}"

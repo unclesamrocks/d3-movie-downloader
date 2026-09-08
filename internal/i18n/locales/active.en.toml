@@ -70,9 +70,6 @@ other = "📋 You have no active downloads to stop."
 [stop_failed]
 other = "❌ Failed to stop download: {{.Error}}"
 
-[download_stopped]
-other = "⏹ Download stopped and file deleted."
-
 [active_download_exists]
 other = "⚠️ You already have an active download:\n\n{{.Status}}"
 
@@ -106,9 +103,6 @@ other = "Failed"
 [status_stopped]
 other = "Stopped"
 
-[status_error]
-other = "Error"
-
 [progress]
 other = "📊 Progress: {{.Progress}}%"
 
@@ -120,9 +114,6 @@ other = "❌ Insufficient disk space to download this file."
 
 [video_ready]
 other = "🎬 Your video is ready!"
-
-[download_success]
-other = "✅ Video downloaded and sent successfully!"
 
 [download_error]
 other = "❌ Download error: {{.Error}}"
