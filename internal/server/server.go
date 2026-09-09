@@ -81,9 +81,20 @@ func (s *Server) handleWebhook(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Log empty bodies at debug level (common during webhook verification)
+	if len(body) == 0 {
+		fmt.Printf("Webhook: empty body from %s\n", r.RemoteAddr)
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		json.NewEncoder(w).Encode(map[string]any{
+			"status": "ok",
+		})
+		return
+	}
+
 	messages, err := s.messenger.ParseIncoming(body)
 	if err != nil {
-		fmt.Printf("Webhook parse error: %v\n", err)
+		fmt.Printf("Webhook parse error from %s: %v\n", r.RemoteAddr, err)
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusBadRequest)
 		json.NewEncoder(w).Encode(map[string]any{

@@ -85,6 +85,10 @@ func NewTelegramAdapter(botToken string) *TelegramAdapter {
 
 // ParseIncoming parses Telegram webhook body
 func (t *TelegramAdapter) ParseIncoming(body []byte) ([]IncomingMessage, error) {
+	if len(body) == 0 {
+		return nil, fmt.Errorf("empty body")
+	}
+
 	var raw json.RawMessage
 	if err := json.Unmarshal(body, &raw); err != nil {
 		return nil, fmt.Errorf("failed to parse body: %w", err)
