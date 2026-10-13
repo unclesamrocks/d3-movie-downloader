@@ -162,7 +162,9 @@ func (t *TelegramAdapter) SendText(userID string, text string) error {
 	return nil
 }
 
-// SendFile sends a video file via Telegram Bot API
+// SendFile sends a video file via Telegram Bot API.
+// The file is streamed to Telegram via io.Pipe, so it is never fully
+// buffered in memory.
 func (t *TelegramAdapter) SendFile(ctx context.Context, userID string, filePath string, caption string, width int, height int) error {
 	file, err := os.Open(filePath)
 	if err != nil {
@@ -170,10 +172,44 @@ func (t *TelegramAdapter) SendFile(ctx context.Context, userID string, filePath 
 	}
 	defer file.Close()
 
-	// Create multipart form
-	var buf bytes.Buffer
-	writer := multipart.NewWriter(&buf)
+	// Stream the multipart body through a pipe: the goroutine writes
+	// while the HTTP client reads — only one small chunk is in memory.
+	pr, pw := io.Pipe()
+	writer := multipart.NewWriter(pw)
 
+	go func() {
+		pw.CloseWithError(t.writeVideoForm(writer, userID, filePath, caption, width, height, file))
+	}()
+
+	req, err := http.NewRequestWithContext(ctx, "POST", fmt.Sprintf("%s/sendVideo", t.apiURL), pr)
+	if err != nil {
+		pr.CloseWithError(err)
+		fullErr := fmt.Errorf("failed to create request: %w", err)
+		fmt.Printf("Failed to send file to user %s: %v\n", userID, fullErr)
+		return fmt.Errorf("failed to create request (sendVideo)")
+	}
+	req.Header.Set("Content-Type", writer.FormDataContentType())
+
+	resp, err := t.client.Do(req)
+	if err != nil {
+		fullErr := fmt.Errorf("failed to send file: %w", err)
+		fmt.Printf("Failed to send file to user %s: %v\n", userID, fullErr)
+		return fmt.Errorf("failed to send file (sendVideo)")
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		body, _ := io.ReadAll(resp.Body)
+		fullErr := fmt.Errorf("telegram API error: %d %s", resp.StatusCode, string(body))
+		fmt.Printf("Failed to send file to user %s: %v\n", userID, fullErr)
+		return fmt.Errorf("telegram API error %d (sendVideo)", resp.StatusCode)
+	}
+
+	return nil
+}
+
+// writeVideoForm writes the multipart form (fields + video file) to w.
+func (t *TelegramAdapter) writeVideoForm(writer *multipart.Writer, userID, filePath, caption string, width, height int, file *os.File) error {
 	// Add chat_id
 	if err := writer.WriteField("chat_id", userID); err != nil {
 		return fmt.Errorf("failed to write chat_id: %w", err)
@@ -214,30 +250,6 @@ func (t *TelegramAdapter) SendFile(ctx context.Context, userID string, filePath 
 
 	if err := writer.Close(); err != nil {
 		return fmt.Errorf("failed to close writer: %w", err)
-	}
-
-	// Send request
-	req, err := http.NewRequestWithContext(ctx, "POST", fmt.Sprintf("%s/sendVideo", t.apiURL), &buf)
-	if err != nil {
-		fullErr := fmt.Errorf("failed to create request: %w", err)
-		fmt.Printf("Failed to send file to user %s: %v\n", userID, fullErr)
-		return fmt.Errorf("failed to create request (sendVideo)")
-	}
-	req.Header.Set("Content-Type", writer.FormDataContentType())
-
-	resp, err := t.client.Do(req)
-	if err != nil {
-		fullErr := fmt.Errorf("failed to send file: %w", err)
-		fmt.Printf("Failed to send file to user %s: %v\n", userID, fullErr)
-		return fmt.Errorf("failed to send file (sendVideo)")
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		body, _ := io.ReadAll(resp.Body)
-		fullErr := fmt.Errorf("telegram API error: %d %s", resp.StatusCode, string(body))
-		fmt.Printf("Failed to send file to user %s: %v\n", userID, fullErr)
-		return fmt.Errorf("telegram API error %d (sendVideo)", resp.StatusCode)
 	}
 
 	return nil
