@@ -6,6 +6,7 @@ import (
 	"io"
 	"net/http"
 	"os"
+	"sync"
 	"time"
 
 	"d3-movie-downloader/internal/config"
@@ -20,6 +21,10 @@ type Server struct {
 	commandHandler *handler.CommandHandler
 	config         *config.Config
 	startTime      time.Time
+	messageQueue   chan messenger.IncomingMessage
+	stopQueue      chan struct{}
+	workers        sync.WaitGroup
+	stopOnce       sync.Once
 }
 
 // NewServer creates a new HTTP server
@@ -29,6 +34,8 @@ func NewServer(m messenger.MessengerAdapter, h *handler.CommandHandler, cfg *con
 		commandHandler: h,
 		config:         cfg,
 		startTime:      time.Now(),
+		messageQueue:   make(chan messenger.IncomingMessage, 256),
+		stopQueue:      make(chan struct{}),
 	}
 }
 
@@ -43,6 +50,10 @@ func (s *Server) Start() {
 		Addr:    fmt.Sprintf(":%d", s.config.Server.Port),
 		Handler: mux,
 	}
+	for i := 0; i < 16; i++ {
+		s.workers.Add(1)
+		go s.messageWorker()
+	}
 
 	fmt.Printf("🌐 Webhook server listening on port %d\n", s.config.Server.Port)
 	go s.server.ListenAndServe()
@@ -50,10 +61,28 @@ func (s *Server) Start() {
 
 // Stop gracefully shuts down the server
 func (s *Server) Stop() error {
+	s.stopOnce.Do(func() {
+		close(s.stopQueue)
+	})
 	if s.server != nil {
-		return s.server.Close()
+		err := s.server.Close()
+		s.workers.Wait()
+		return err
 	}
+	s.workers.Wait()
 	return nil
+}
+
+func (s *Server) messageWorker() {
+	defer s.workers.Done()
+	for {
+		select {
+		case <-s.stopQueue:
+			return
+		case msg := <-s.messageQueue:
+			s.commandHandler.HandleMessage(msg)
+		}
+	}
 }
 
 // handleHealth handles health check requests
@@ -105,7 +134,15 @@ func (s *Server) handleWebhook(w http.ResponseWriter, r *http.Request) {
 
 	// Process messages asynchronously
 	for _, msg := range messages {
-		go s.commandHandler.HandleMessage(msg)
+		select {
+		case s.messageQueue <- msg:
+		case <-s.stopQueue:
+			w.WriteHeader(http.StatusServiceUnavailable)
+			return
+		default:
+			w.WriteHeader(http.StatusServiceUnavailable)
+			return
+		}
 	}
 
 	w.Header().Set("Content-Type", "application/json")
@@ -128,7 +165,15 @@ func (s *Server) handleNotFound(w http.ResponseWriter, r *http.Request) {
 // readRequestBody reads the raw request body
 func (s *Server) readRequestBody(r *http.Request) ([]byte, error) {
 	defer r.Body.Close()
-	return io.ReadAll(r.Body)
+	const maxWebhookBody = 1_048_576 // 1 MiB; Telegram updates should be far smaller.
+	body, err := io.ReadAll(io.LimitReader(r.Body, maxWebhookBody+1))
+	if err != nil {
+		return nil, err
+	}
+	if len(body) > maxWebhookBody {
+		return nil, fmt.Errorf("request body exceeds %d bytes", maxWebhookBody)
+	}
+	return body, nil
 }
 
 // CleanupTempDir deletes all files in the temp directory

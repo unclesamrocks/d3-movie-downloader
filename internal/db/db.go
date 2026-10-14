@@ -39,14 +39,17 @@ func NewDatabase(dbPath string) (*Database, error) {
 
 	// Enable WAL mode and foreign keys
 	if _, err := sqlDB.Exec("PRAGMA journal_mode = WAL;"); err != nil {
+		sqlDB.Close()
 		return nil, err
 	}
 	if _, err := sqlDB.Exec("PRAGMA foreign_keys = ON;"); err != nil {
+		sqlDB.Close()
 		return nil, err
 	}
 
 	d := &Database{db: sqlDB}
 	if err := d.init(); err != nil {
+		sqlDB.Close()
 		return nil, err
 	}
 

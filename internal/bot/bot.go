@@ -125,6 +125,10 @@ func (b *Bot) Shutdown() {
 		b.messenger.StopPolling()
 	}
 
+	if b.downloadManager != nil {
+		b.downloadManager.Close()
+	}
+
 	if b.database != nil {
 		b.database.Close()
 		fmt.Println("✅ Database connection closed")

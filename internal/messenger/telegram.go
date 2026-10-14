@@ -176,14 +176,18 @@ func (t *TelegramAdapter) SendFile(ctx context.Context, userID string, filePath 
 	// while the HTTP client reads — only one small chunk is in memory.
 	pr, pw := io.Pipe()
 	writer := multipart.NewWriter(pw)
+	formDone := make(chan error, 1)
 
 	go func() {
-		pw.CloseWithError(t.writeVideoForm(writer, userID, filePath, caption, width, height, file))
+		err := t.writeVideoForm(writer, userID, filePath, caption, width, height, file)
+		pw.CloseWithError(err)
+		formDone <- err
 	}()
 
 	req, err := http.NewRequestWithContext(ctx, "POST", fmt.Sprintf("%s/sendVideo", t.apiURL), pr)
 	if err != nil {
 		pr.CloseWithError(err)
+		<-formDone
 		fullErr := fmt.Errorf("failed to create request: %w", err)
 		fmt.Printf("Failed to send file to user %s: %v\n", userID, fullErr)
 		return fmt.Errorf("failed to create request (sendVideo)")
@@ -192,14 +196,26 @@ func (t *TelegramAdapter) SendFile(ctx context.Context, userID string, filePath 
 
 	resp, err := t.client.Do(req)
 	if err != nil {
+		pr.CloseWithError(err)
+		<-formDone
 		fullErr := fmt.Errorf("failed to send file: %w", err)
 		fmt.Printf("Failed to send file to user %s: %v\n", userID, fullErr)
 		return fmt.Errorf("failed to send file (sendVideo)")
 	}
 	defer resp.Body.Close()
+	// If Telegram rejects the request without consuming the body, unblock the
+	// producer before waiting for it. For a successful response the transport
+	// has consumed the request body before returning from Do.
+	if resp.StatusCode != http.StatusOK {
+		pr.CloseWithError(fmt.Errorf("telegram rejected upload"))
+	}
+	formErr := <-formDone
+	if formErr != nil && resp.StatusCode == http.StatusOK {
+		return fmt.Errorf("failed to prepare file: %w", formErr)
+	}
 
 	if resp.StatusCode != http.StatusOK {
-		body, _ := io.ReadAll(resp.Body)
+		body, _ := io.ReadAll(io.LimitReader(resp.Body, 1_048_576)) // 1 MiB
 		fullErr := fmt.Errorf("telegram API error: %d %s", resp.StatusCode, string(body))
 		fmt.Printf("Failed to send file to user %s: %v\n", userID, fullErr)
 		return fmt.Errorf("telegram API error %d (sendVideo)", resp.StatusCode)
@@ -325,7 +341,7 @@ func (t *TelegramAdapter) pollUpdates(ctx context.Context, onMessage func(Incomi
 		default:
 		}
 
-		updates, newOffset, err := t.getUpdates(offset)
+		updates, newOffset, err := t.getUpdates(ctx, offset)
 		if err != nil {
 			fmt.Printf("Polling error: %v\n", err)
 			offset = newOffset
@@ -339,20 +355,20 @@ func (t *TelegramAdapter) pollUpdates(ctx context.Context, onMessage func(Incomi
 		select {
 		case <-ctx.Done():
 			return
-		case <-time.After(1 * time.Second):
+		case <-time.NewTimer(1 * time.Second).C:
 		}
 	}
 }
 
 // getUpdates fetches updates from Telegram API
-func (t *TelegramAdapter) getUpdates(offset int) ([]telegramUpdate, int, error) {
+func (t *TelegramAdapter) getUpdates(ctx context.Context, offset int) ([]telegramUpdate, int, error) {
 	params := map[string]any{
 		"offset":  offset,
 		"limit":   100,
 		"timeout": 0,
 	}
 
-	result, err := t.makeRequestRaw("getUpdates", params)
+	result, err := t.makeRequestRawContext(ctx, "getUpdates", params)
 	if err != nil {
 		return nil, offset, err
 	}
@@ -380,22 +396,30 @@ func (t *TelegramAdapter) makeRequest(method string, params map[string]any) erro
 
 // makeRequestRaw makes a JSON request to the Telegram API and returns the result
 func (t *TelegramAdapter) makeRequestRaw(method string, params map[string]any) (json.RawMessage, error) {
+	return t.makeRequestRawContext(context.Background(), method, params)
+}
+
+func (t *TelegramAdapter) makeRequestRawContext(ctx context.Context, method string, params map[string]any) (json.RawMessage, error) {
 	body, err := json.Marshal(params)
 	if err != nil {
 		return nil, fmt.Errorf("failed to marshal params: %w", err)
 	}
 
-	resp, err := t.client.Post(
-		fmt.Sprintf("%s/%s", t.apiURL, method),
-		"application/json",
-		bytes.NewReader(body),
-	)
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost,
+		fmt.Sprintf("%s/%s", t.apiURL, method), bytes.NewReader(body))
+	if err != nil {
+		return nil, fmt.Errorf("failed to create request: %w", err)
+	}
+	req.Header.Set("Content-Type", "application/json")
+	resp, err := t.client.Do(req)
 	if err != nil {
 		return nil, fmt.Errorf("failed to make request: %w", err)
 	}
 	defer resp.Body.Close()
 
-	respBody, err := io.ReadAll(resp.Body)
+	// Telegram responses are small; cap buffering so a malicious/proxy response
+	// cannot make every request retain an arbitrarily large byte slice.
+	respBody, err := io.ReadAll(io.LimitReader(resp.Body, 1_048_576)) // 1 MiB
 	if err != nil {
 		return nil, fmt.Errorf("failed to read response: %w", err)
 	}

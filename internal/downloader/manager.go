@@ -83,6 +83,21 @@ type DownloadManager struct {
 	client          *http.Client
 }
 
+// Close cancels all tasks and releases the HTTP transport resources.
+func (dm *DownloadManager) Close() {
+	dm.mu.Lock()
+	for _, task := range dm.tasks {
+		if task.cancel != nil {
+			task.cancel()
+		}
+	}
+	dm.mu.Unlock()
+
+	if transport, ok := dm.client.Transport.(*http.Transport); ok {
+		transport.CloseIdleConnections()
+	}
+}
+
 // NewDownloadManager creates a new download manager
 func NewDownloadManager(m messenger.MessengerAdapter, l *i18n.Localizer, maxConcurrent int, tempDir string) *DownloadManager {
 	transport := &http.Transport{
@@ -121,7 +136,7 @@ func (dm *DownloadManager) CreateTask(userID string, url string, lang string) (*
 	}
 
 	// Generate unique task ID
-	taskID := fmt.Sprintf("%s-%d", userID, time.Now().UnixMilli())
+	taskID := fmt.Sprintf("%s-%d", userID, time.Now().UnixNano())
 
 	task := &DownloadTask{
 		ID:        taskID,
@@ -141,7 +156,7 @@ func (dm *DownloadManager) CreateTask(userID string, url string, lang string) (*
 	// Try to start processing
 	go dm.processQueue()
 
-	return task, nil
+	return taskSnapshot(task), nil
 }
 
 // GetUserTask returns the current task for a user
@@ -159,7 +174,7 @@ func (dm *DownloadManager) GetUserTask(userID string) *DownloadTask {
 		return nil
 	}
 
-	return task
+	return taskSnapshot(task)
 }
 
 // StopTask stops a user's download task
@@ -196,7 +211,9 @@ func (dm *DownloadManager) StopTask(userID string) (bool, error) {
 	}
 
 	// Remove from tracking
-	delete(dm.userTasks, userID)
+	if dm.userTasks[userID] == taskID {
+		delete(dm.userTasks, userID)
+	}
 	delete(dm.tasks, taskID)
 	dm.queue = removeTaskFromQueue(dm.queue, taskID)
 
@@ -215,7 +232,7 @@ func (dm *DownloadManager) GetAllTasks() []*DownloadTask {
 
 	tasks := make([]*DownloadTask, 0, len(dm.tasks))
 	for _, task := range dm.tasks {
-		tasks = append(tasks, task)
+		tasks = append(tasks, taskSnapshot(task))
 	}
 	return tasks
 }
@@ -263,9 +280,15 @@ func (dm *DownloadManager) processTask(taskID string) {
 	dm.mu.Unlock()
 
 	defer func() {
+		// Always release the timer and context references, including on success.
+		task.cancel()
 		dm.mu.Lock()
 		dm.activeDownloads--
-		delete(dm.userTasks, task.UserID)
+		// Do not remove a newer task created for the same user after this task
+		// was stopped or completed.
+		if dm.userTasks[task.UserID] == taskID {
+			delete(dm.userTasks, task.UserID)
+		}
 		delete(dm.tasks, taskID)
 		dm.mu.Unlock()
 
@@ -328,7 +351,7 @@ func (dm *DownloadManager) processTask(taskID string) {
 		return
 	}
 
-	fileName := fmt.Sprintf("video_%s_%d.mp4", task.UserID, time.Now().UnixMilli())
+	fileName := fmt.Sprintf("video_%s_%d.mp4", task.UserID, time.Now().UnixNano())
 	filePath := filepath.Join(tempDir, fileName)
 
 	dm.mu.Lock()
@@ -407,9 +430,13 @@ func (dm *DownloadManager) extractVideoUrl(ctx context.Context, pageURL string) 
 		return nil, fmt.Errorf("failed to fetch page: %d", resp.StatusCode)
 	}
 
-	html, err := io.ReadAll(resp.Body)
+	const maxHTMLSize = 16_777_216 // 16 MiB
+	html, err := io.ReadAll(io.LimitReader(resp.Body, maxHTMLSize+1))
 	if err != nil {
 		return nil, fmt.Errorf("failed to read response: %w", err)
+	}
+	if len(html) > maxHTMLSize {
+		return nil, fmt.Errorf("page response exceeds %d bytes", maxHTMLSize)
 	}
 
 	return parser.FindVideoUrl(string(html), pageURL)
@@ -544,4 +571,11 @@ func removeTaskFromQueue(queue []string, taskID string) []string {
 		}
 	}
 	return queue
+}
+
+// taskSnapshot prevents callers from observing fields while a worker updates
+// the live task under the manager lock.
+func taskSnapshot(task *DownloadTask) *DownloadTask {
+	copy := *task
+	return &copy
 }
