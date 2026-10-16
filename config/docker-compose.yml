@@ -14,11 +14,14 @@ services:
       - MAX_DISK_USAGE_MB=${MAX_DISK_USAGE_MB:-1024}
       - NODE_ENV=production
       - PORT=3000
+      - PPROF_ENABLED=${PPROF_ENABLED:-false}
+      - PPROF_PORT=${PPROF_PORT:-6060}
     volumes:
       - ./data:/app/data
       - ./temp:/app/temp
     ports:
       - "${PORT:-3000}:3000"
+      - "127.0.0.1:${PPROF_HOST_PORT:-6060}:${PPROF_PORT:-6060}"
     networks:
       - scripts-vpn_default # Подключаемся к существующей сети nginx
 

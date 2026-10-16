@@ -24,6 +24,10 @@ type Config struct {
 	Server struct {
 		Port int
 	}
+	Pprof struct {
+		Enabled bool
+		Port    int
+	}
 	Env string
 }
 
@@ -63,6 +67,22 @@ func Load() (*Config, error) {
 		return nil, fmt.Errorf("PORT must be a number: %w", err)
 	}
 	cfg.Server.Port = port
+
+	// pprof diagnostics
+	pprofEnabled, err := strconv.ParseBool(getEnv("PPROF_ENABLED", "false"))
+	if err != nil {
+		return nil, fmt.Errorf("PPROF_ENABLED must be a boolean: %w", err)
+	}
+	cfg.Pprof.Enabled = pprofEnabled
+
+	pprofPort, err := strconv.Atoi(getEnv("PPROF_PORT", "6060"))
+	if err != nil {
+		return nil, fmt.Errorf("PPROF_PORT must be a number: %w", err)
+	}
+	if pprofPort < 1 || pprofPort > 65535 {
+		return nil, fmt.Errorf("PPROF_PORT must be between 1 and 65535")
+	}
+	cfg.Pprof.Port = pprofPort
 
 	// Environment
 	cfg.Env = getEnv("NODE_ENV", "development")

@@ -78,6 +78,29 @@ The compose file connects to an external `scripts-vpn_default` network. Adjust o
 | `MAX_CONCURRENT_DOWNLOADS` | `1` | Global max parallel downloads |
 | `PORT` | `3000` | HTTP server port (webhook mode) |
 | `NODE_ENV` | `development` | `production` enables webhook mode |
+| `PPROF_ENABLED` | `false` | Enable private Go runtime profiling endpoint |
+| `PPROF_PORT` | `6060` | pprof listener port inside the container |
+| `PPROF_HOST_PORT` | `6060` | VPS loopback port published by Docker Compose |
+
+### Go runtime profiling
+
+Set `PPROF_ENABLED=true` and recreate the container to enable pprof. Compose binds the diagnostics port only to VPS loopback (`127.0.0.1`), not public interfaces. Do not add it to Nginx/public routes. To use it remotely, create an SSH tunnel from your computer:
+
+```bash
+ssh -L 6060:127.0.0.1:6060 <user>@<vps>
+```
+
+Then access the goroutine profile locally at `http://127.0.0.1:6060/debug/pprof/goroutine?debug=2`, or save a binary profile with:
+
+```bash
+curl -o goroutines.pb.gz http://127.0.0.1:6060/debug/pprof/goroutine
+```
+
+Take snapshots at different times and compare them with `go tool pprof -top -diff_base=old.pb.gz new.pb.gz`. pprof may expose sensitive process details and can consume resources; keep it private and enable it only when needed.
+
+The loopback host binding prevents access through the VPS public interfaces; containers on the shared Docker network may still be able to reach the pprof listener directly.
+
+The Compose file connects to an external `scripts-vpn_default` network. Adjust or remove the `networks` section if you don't use that network.
 
 ## Bot Commands
 

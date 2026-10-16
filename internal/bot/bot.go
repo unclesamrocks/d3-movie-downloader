@@ -23,6 +23,7 @@ type Bot struct {
 	downloadManager *downloader.DownloadManager
 	commandHandler  *handler.CommandHandler
 	server          *server.Server
+	pprofServer     *server.PprofServer
 }
 
 // NewBot creates a new Bot instance
@@ -81,6 +82,14 @@ func (b *Bot) Start() error {
 		fmt.Println("✅ Bot commands registered")
 	}
 
+	if cfg.Pprof.Enabled {
+		b.pprofServer = server.NewPprofServer(cfg.Pprof.Port)
+		if err := b.pprofServer.Start(); err != nil {
+			return fmt.Errorf("failed to start pprof server: %w", err)
+		}
+		fmt.Printf("✅ pprof diagnostics listening on port %d\n", cfg.Pprof.Port)
+	}
+
 	// Set up webhook or polling based on environment
 	if cfg.Env == "production" && cfg.Telegram.WebhookURL != "" {
 		// Production mode: use webhooks
@@ -119,6 +128,13 @@ func (b *Bot) Shutdown() {
 	if b.server != nil {
 		b.server.Stop()
 		fmt.Println("✅ HTTP server closed")
+	}
+	if b.pprofServer != nil {
+		if err := b.pprofServer.Stop(); err != nil {
+			fmt.Printf("⚠️ Failed to stop pprof server: %v\n", err)
+		} else {
+			fmt.Println("✅ pprof diagnostics server closed")
+		}
 	}
 
 	if b.messenger != nil {
