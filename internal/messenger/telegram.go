@@ -390,13 +390,8 @@ func (t *TelegramAdapter) getUpdates(ctx context.Context, offset int) ([]telegra
 
 // makeRequest makes a JSON request to the Telegram API
 func (t *TelegramAdapter) makeRequest(method string, params map[string]any) error {
-	_, err := t.makeRequestRaw(method, params)
+	_, err := t.makeRequestRawContext(context.Background(), method, params)
 	return err
-}
-
-// makeRequestRaw makes a JSON request to the Telegram API and returns the result
-func (t *TelegramAdapter) makeRequestRaw(method string, params map[string]any) (json.RawMessage, error) {
-	return t.makeRequestRawContext(context.Background(), method, params)
 }
 
 func (t *TelegramAdapter) makeRequestRawContext(ctx context.Context, method string, params map[string]any) (json.RawMessage, error) {
