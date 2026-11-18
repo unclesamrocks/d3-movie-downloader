@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"net"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -102,6 +103,16 @@ func (dm *DownloadManager) Close() {
 func NewDownloadManager(m messenger.MessengerAdapter, l *i18n.Localizer, maxConcurrent int, tempDir string) *DownloadManager {
 	transport := &http.Transport{
 		MaxIdleConnsPerHost: maxConcurrent,
+		// Reap idle connections quickly: CDNs silently close them, and a
+		// reused dead socket makes the next request hang until the timeout.
+		IdleConnTimeout:     30 * time.Second,
+		TLSHandshakeTimeout: 10 * time.Second,
+		// Fail fast instead of waiting for the full client timeout on headers.
+		ResponseHeaderTimeout: 30 * time.Second,
+		DialContext: (&net.Dialer{
+			Timeout:   10 * time.Second,
+			KeepAlive: 30 * time.Second,
+		}).DialContext,
 	}
 
 	return &DownloadManager{
@@ -115,7 +126,9 @@ func NewDownloadManager(m messenger.MessengerAdapter, l *i18n.Localizer, maxConc
 		tempDir:         tempDir,
 		client: &http.Client{
 			Transport: transport,
-			Timeout:   1 * time.Minute,
+			// No global Timeout: it would also cap the whole body download.
+			// Per-request deadlines come from the task context (5 min) and
+			// the transport-level timeouts above.
 		},
 	}
 }
