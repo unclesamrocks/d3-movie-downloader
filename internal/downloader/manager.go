@@ -110,7 +110,9 @@ func NewDownloadManager(m messenger.MessengerAdapter, l *i18n.Localizer, maxConc
 		// Fail fast instead of waiting for the full client timeout on headers.
 		ResponseHeaderTimeout: 30 * time.Second,
 		DialContext: (&net.Dialer{
-			Timeout:   10 * time.Second,
+			// SYN retransmissions: 1s, 3s, 7s, 15s... — 30s covers several
+			// rounds in case SYN packets are dropped on the path to the CDN edge.
+			Timeout:   30 * time.Second,
 			KeepAlive: 30 * time.Second,
 		}).DialContext,
 	}
